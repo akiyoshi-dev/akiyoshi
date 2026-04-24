@@ -1,0 +1,14 @@
+[workspace]
+members = ["crates/akiyoshi"]
+default-members = ["crates/akiyoshi"]
+resolver = "2"
+
+[workspace.dependencies]
+akiyoshi = { path = "crates/akiyoshi" }
+
+gpui = { git = "https://github.com/zed-industries/zed" }
+gpui_platform = { git = "https://github.com/zed-industries/zed" } # fix https://github.com/zed-industries/create-gpui-app/issues/34
+# smallvec is included here for convenience, it is used by gpui when creating
+# components that can have children. uncomment this line or
+# use `cargo add smallvec` to add it to your project
+#smallvec = "1.13.2"
