@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/akiyoshi"]
+members = ["crates/akiyoshi", "crates/ui"]
 default-members = ["crates/akiyoshi"]
 resolver = "2"
 
