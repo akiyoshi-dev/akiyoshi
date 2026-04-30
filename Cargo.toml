@@ -3,12 +3,20 @@ members = ["crates/akiyoshi", "crates/ui"]
 default-members = ["crates/akiyoshi"]
 resolver = "2"
 
+[workspace.package]
+edition = "2024"
+
+[workspace.lints.rust]
+
 [workspace.dependencies]
 akiyoshi = { path = "crates/akiyoshi" }
+ui = { path = "crates/ui" }
 
+# ui
 gpui = { git = "https://github.com/zed-industries/zed" }
-gpui_platform = { git = "https://github.com/zed-industries/zed" } # fix https://github.com/zed-industries/create-gpui-app/issues/34
+gpui_platform = { git = "https://github.com/zed-industries/zed", features = ["font-kit"] }
+
 # smallvec is included here for convenience, it is used by gpui when creating
 # components that can have children. uncomment this line or
 # use `cargo add smallvec` to add it to your project
-#smallvec = "1.13.2"
+smallvec = "1.15.1"

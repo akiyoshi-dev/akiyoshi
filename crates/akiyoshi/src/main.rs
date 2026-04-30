@@ -7,26 +7,27 @@ struct HelloWorld {
 
 impl Render for HelloWorld {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        div()
-            .flex()
-            .bg(rgb(0xffc0cb))
-            .size_full()
-            .justify_center()
-            .items_center()
-            .text_xl()
-            // 使用ffc0pb颜色，类似于粉色，来突出显示文本
-            .text_color(rgb(0xffffff))
-            .child(format!("Hello, {}!", &self.text))
+        ui::Button::new(&self.text)
     }
 }
 
 fn main() {
     application().run(|cx: &mut App| {
-        cx.open_window(WindowOptions::default(), |_, cx| {
-            cx.new(|_cx| HelloWorld {
-                text: "Akiyoshi(秋吉)".into(),
-            })
-        })
+        let display_id = DisplayId::new(3);
+        let bounds = Bounds::centered(None, size(px(500.), px(500.)), cx);
+        cx.open_window(
+            WindowOptions {
+                display_id: Some(display_id),
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
+                ..Default::default()
+            },
+            |_, cx| {
+                cx.new(|_cx| HelloWorld {
+                    text: "Akiyoshi(秋吉)".into(),
+                })
+            },
+        )
         .unwrap();
+        cx.activate(true);
     });
 }
