@@ -3,69 +3,64 @@ use gpui::{
     WindowBounds, WindowOptions, div, px, rgb, size,
 };
 use gpui_platform::application;
-use theme::{ThemeKind, active_theme, active_theme_kind, set_active_theme_kind};
-use ui::clickable::Clickable;
-use ui::Button;
+use theme::{GlobalTheme, ThemeId};
+use ui::{Button, clickable::Clickable};
 
 struct HelloWorld {
-    theme_kind: ThemeKind,
+    theme_id: ThemeId,
 }
 
 impl HelloWorld {
-    fn next_theme_kind(&self) -> ThemeKind {
-        match self.theme_kind {
-            ThemeKind::Auto => ThemeKind::Light,
-            ThemeKind::Light => ThemeKind::Dark,
-            ThemeKind::Dark => ThemeKind::Auto,
-        }
-    }
-
-    fn mode_label(kind: ThemeKind) -> &'static str {
-        match kind {
-            ThemeKind::Auto => "Auto",
-            ThemeKind::Light => "Light",
-            ThemeKind::Dark => "Dark",
+    fn next_theme_id(&self) -> ThemeId {
+        if self.theme_id.as_ref() == "akiyoshi_dark" {
+            "akiyoshi_light".into()
+        } else {
+            "akiyoshi_dark".into()
         }
     }
 }
 
 impl Render for HelloWorld {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let next = self.next_theme_kind();
-        let effective = self.theme_kind.resolve_system();
-        let palette = active_theme();
-        let status = format!(
-            "当前: {} (生效: {})",
-            Self::mode_label(self.theme_kind),
-            Self::mode_label(effective)
-        );
-        let label = format!(
-            "切换主题: {} -> {}",
-            Self::mode_label(self.theme_kind),
-            Self::mode_label(next)
-        );
+        let theme = GlobalTheme::theme(cx);
+        let next_theme = self.next_theme_id();
+        let button_label = if next_theme.as_ref() == "akiyoshi_light" {
+            "切换到 Light"
+        } else {
+            "切换到 Dark"
+        };
 
         div()
-            .size(px(500.))
-            .bg(rgb(palette.colors.background))
-            .text_color(rgb(palette.colors.text_primary))
-            .child(status)
+            .bg(rgb(theme.styles.colors.background.into()))
+            .text_color(rgb(theme.styles.colors.text.primary.into()))
+            .items_center()
+            .justify_center()
             .child(
-                Button::new("toggle-theme")
-                    .label(label)
-                    .on_click(cx.listener(|this, _event, _window, cx| {
-                        this.theme_kind = this.next_theme_kind();
-                        set_active_theme_kind(this.theme_kind);
-                        cx.notify();
-                    })),
+                div()
+                    .flex()
+                    .justify_center()
+                    .items_center()
+                    .child(
+                        Button::new("theme-button")
+                            .label(button_label)
+                            .on_click(cx.listener(|this, _event, _window, cx| {
+                                this.theme_id = this.next_theme_id();
+                                let _ = theme::init(Some(this.theme_id.clone()), cx);
+                                cx.notify();
+                            }))
+                    )
+                    .h(px(120.))
+                    .px(px(125.0))
+                ,
             )
     }
 }
 
 fn main() {
-    set_active_theme_kind(ThemeKind::Auto);
-
     application().run(|cx: &mut App| {
+        // 初始化主题
+        theme::init(None, cx).unwrap();
+
         let primary_display = cx.primary_display();
         let window_size = size(px(500.), px(500.));
         let bounds = Bounds::centered(primary_display.as_ref().map(|d| d.id()), window_size, cx);
@@ -77,7 +72,7 @@ fn main() {
             },
             |_, cx| {
                 cx.new(|_cx| HelloWorld {
-                    theme_kind: active_theme_kind(),
+                    theme_id: theme::DEFAULT_THEME_ID.into(),
                 })
             },
         )

@@ -1,15 +1,14 @@
-use crate::components::button::button_like::ButtonLike;
-use crate::clickable::Clickable;
-use gpui::{App, ClickEvent, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Window};
-use gpui::prelude::FluentBuilder;
-use theme::{Theme, ThemeKind};
+use crate::{
+    clickable::{ClickHandlerFn, Clickable},
+    components::button::button_like::ButtonLike,
+};
+use gpui::{App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Window, prelude::FluentBuilder, Styled, StyleRefinement};
 
 /// 按钮组件。
 #[derive(IntoElement)]
 pub struct Button {
     content: ButtonLike,
     label: Option<SharedString>,
-    theme_kind: Option<ThemeKind>,
 }
 
 impl Button {
@@ -17,7 +16,6 @@ impl Button {
         Self {
             content: ButtonLike::new(id.into()),
             label: None,
-            theme_kind: None,
         }
     }
 
@@ -26,30 +24,27 @@ impl Button {
         self.label = Some(label.into());
         self
     }
-
-    /// 覆盖当前按钮使用的主题模式（默认跟随全局主题）。
-    pub fn theme_kind(mut self, kind: ThemeKind) -> Self {
-        self.theme_kind = Some(kind);
-        self
-    }
 }
 
 impl RenderOnce for Button {
-    fn render(mut self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        if let Some(kind) = self.theme_kind {
-            self.content = self.content.theme(Theme::from_kind(kind));
-        }
-
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
         self.content
-            .when_some(self.label, |this, label| {
-                this.child(label)
-            })
+            .when_some(self.label, |this, label| this.child(label))
     }
 }
 
 impl Clickable for Button {
-    fn on_click(mut self, handler: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> Self {
+    fn on_click<H>(mut self, handler: H) -> Self
+    where
+        H: ClickHandlerFn,
+    {
         self.content = self.content.on_click(handler);
         self
+    }
+}
+
+impl Styled for Button {
+    fn style(&mut self) -> &mut StyleRefinement {
+        self.content.content.style()
     }
 }

@@ -1,585 +1,217 @@
-use std::sync::{LazyLock, RwLock};
+mod appearance;
+mod registry;
+mod styles;
+mod utils;
 
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr,
+    sync::Arc,
+};
+
+use crate::{
+    registry::ThemeRegistry,
+    styles::{ColorTokens, RadiusTokens, SpacingTokens, TypographyTokens},
+};
+pub use appearance::*;
 use dark_light::Mode;
-use serde::Deserialize;
+use gpui::{App, BorrowAppContext, Global, SharedString};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use thiserror::Error;
 
-const LIGHT_THEME_JSON: &str = include_str!("../themes/light.json");
-const DARK_THEME_JSON: &str = include_str!("../themes/dark.json");
+/// 默认主题标识符，指向内置的暗色主题。
+pub const DEFAULT_THEME_ID: &str = "akiyoshi_dark";
 
-static ACTIVE_THEME_KIND: LazyLock<RwLock<ThemeKind>> =
-    LazyLock::new(|| RwLock::new(ThemeKind::Auto));
+/// 主题标识符，通常用于注册和查找主题。
+pub type ThemeId = SharedString;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ThemeKind {
-    Light,
-    Dark,
-    Auto,
+/// 主题相关异常
+#[derive(Debug, Error)]
+pub enum ThemeError {
+    /// 主题未找到错误。当请求的主题 ID 在注册表中不存在时返回。
+    #[error("theme with id '{0}' not found")]
+    ThemeNotFound(ThemeId),
+    /// 主题加载错误。当加载主题数据失败时返回。
+    #[error("failed to load theme with id '{0}'")]
+    ThemeLoadFailed(ThemeId),
+    /// 无效的十六进制颜色错误。当解析十六进制颜色字符串失败时返回。
+    #[error("invalid hex color format: '{0}'")]
+    InvalidHexColor(String),
+    /// 主题版本解析错误。当解析版本字符串失败时返回。
+    #[error("invalid theme version format: '{0}'")]
+    InvalidThemeVersion(String),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Theme {
-    pub kind: ThemeKind,
+/// 主题作者信息。这包含了主题作者的名称和联系信息。
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ThemeAuthor {
+    /// 主题作者的名称。
     pub name: String,
-    pub note: String,
-    pub semantic: SemanticTokens,
+    /// 主题作者的联系信息，例如电子邮件地址或社交媒体链接。
+    pub contact: String,
+}
+
+/// 主题版本信息。这包含了主题的版本号，通常采用语义化版本控制（SemVer）的格式。
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThemeVersion {
+    pub major: u32,
+    pub minor: u32,
+    pub patch: u32,
+}
+
+/// 主题样式。这包含了所有与主题相关的设计令牌，如颜色、间距、半径、排版等。
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct ThemeStyles {
+    /// 颜色令牌。这包含了主题的颜色设计令牌，通常从语义令牌派生而来。
     pub colors: ColorTokens,
+    /// 间距令牌。这包含了主题的间距设计令牌，例如小、中、大等不同级别的间距值。
     pub spacing: SpacingTokens,
+    /// 圆角令牌。这包含了主题的圆角设计令牌，例如小、中、大等不同级别的圆角值。
     pub radius: RadiusTokens,
+    /// 排版令牌。这包含了主题的排版设计令牌，例如小、中、大等不同级别的字体大小值。
     pub typography: TypographyTokens,
-    pub styles: StyleTokens,
-    pub button: ButtonTokens,
 }
 
-impl Theme {
-    pub fn from_kind(kind: ThemeKind) -> Self {
-        Self::try_from_kind(kind).unwrap_or_else(|_| Self::fallback_dark())
+/// 主题。这包含了主题的标识符、名称、外观模式、设计令牌以及其他相关信息。
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Theme {
+    /// 主题标识符，通常用于注册和查找主题。
+    pub id: ThemeId,
+    /// 主题说明或备注，提供关于主题的额外信息。
+    pub name: String,
+    /// 主题的外观模式，如 [`Appearance::Light`] 或 [`Appearance::Dark`]。 不能是任何其它值。
+    pub appearance: Appearance,
+    /// 主题的描述或备注，提供关于主题的额外信息。
+    pub describe: String,
+    /// 主题的作者信息，包含了主题作者的名称和联系信息。
+    pub author: ThemeAuthor,
+    /// 主题的版本信息，包含了主题的版本号，通常采用语义化版本控制（SemVer）的格式。
+    pub version: ThemeVersion,
+    /// 主题的样式令牌。这包含了所有与主题相关的设计令牌，如颜色、间距、半径、排版等。
+    pub styles: ThemeStyles,
+}
+
+/// 全局主题。这是一个全局可访问的结构，包含当前活动的主题实例。
+pub struct GlobalTheme {
+    theme: Arc<Theme>,
+}
+
+impl GlobalTheme {
+    /// 返回当前激活主题。
+    pub fn theme(cx: &App) -> Arc<Theme> {
+        cx.global::<Self>().theme.clone()
     }
 
-    pub fn try_from_kind(kind: ThemeKind) -> Result<Self, ThemeLoadError> {
-        match kind.resolve_system() {
-            ThemeKind::Light => parse_theme_json(ThemeKind::Light, LIGHT_THEME_JSON),
-            ThemeKind::Dark | ThemeKind::Auto => parse_theme_json(ThemeKind::Dark, DARK_THEME_JSON),
-        }
-    }
-
-    pub fn light() -> Self {
-        Self::from_kind(ThemeKind::Light)
-    }
-
-    pub fn dark() -> Self {
-        Self::from_kind(ThemeKind::Dark)
-    }
-
-    fn fallback_dark() -> Self {
-        let semantic = SemanticTokens {
-            base: BaseSemanticTokens {
-                background: 0x020817,
-                foreground: 0xf8fafc,
-                card: 0x020817,
-                card_foreground: 0xf8fafc,
-                popover: 0x020817,
-                popover_foreground: 0xf8fafc,
-                border: 0x1e293b,
-                input: 0x1e293b,
-                ring: 0x334155,
-            },
-            intent: IntentSemanticTokens {
-                primary: InteractiveColorTokens {
-                    default: 0xf8fafc,
-                    foreground: 0x0f172a,
-                    hover: 0xe2e8f0,
-                    active: 0xcbd5e1,
-                    disabled: 0x334155,
-                    disabled_foreground: 0x64748b,
-                },
-                secondary: InteractiveColorTokens {
-                    default: 0x1e293b,
-                    foreground: 0xf8fafc,
-                    hover: 0x334155,
-                    active: 0x475569,
-                    disabled: 0x1f2937,
-                    disabled_foreground: 0x64748b,
-                },
-                destructive: InteractiveColorTokens {
-                    default: 0x7f1d1d,
-                    foreground: 0xfef2f2,
-                    hover: 0x991b1b,
-                    active: 0xb91c1c,
-                    disabled: 0x450a0a,
-                    disabled_foreground: 0xfecaca,
-                },
-                muted: InteractiveColorTokens {
-                    default: 0x1e293b,
-                    foreground: 0x94a3b8,
-                    hover: 0x334155,
-                    active: 0x475569,
-                    disabled: 0x1f2937,
-                    disabled_foreground: 0x64748b,
-                },
-                accent: InteractiveColorTokens {
-                    default: 0x1e293b,
-                    foreground: 0xf8fafc,
-                    hover: 0x334155,
-                    active: 0x475569,
-                    disabled: 0x1f2937,
-                    disabled_foreground: 0x64748b,
-                },
-            },
-            state: StateSemanticTokens {
-                success: FeedbackColorTokens {
-                    default: 0x22c55e,
-                    foreground: 0x052e16,
-                    subtle: 0x14532d,
-                },
-                warning: FeedbackColorTokens {
-                    default: 0xf59e0b,
-                    foreground: 0x451a03,
-                    subtle: 0x78350f,
-                },
-                info: FeedbackColorTokens {
-                    default: 0x3b82f6,
-                    foreground: 0x172554,
-                    subtle: 0x1e3a8a,
-                },
-            },
-            interactive: InteractiveSurfaceTokens {
-                surface_hover: 0x111827,
-                surface_active: 0x1f2937,
-                overlay: 0x000000,
-                selection: 0x1d4ed8,
-            },
-        };
-
-        Self {
-            kind: ThemeKind::Dark,
-            name: "dark".to_owned(),
-            note: "Fallback dark theme when JSON parsing fails.".to_owned(),
-            semantic,
-            colors: ColorTokens::from_semantic(&semantic),
-            spacing: SpacingTokens::new(4., 8., 12., 16., 24.),
-            radius: RadiusTokens::new(4., 8., 12.),
-            typography: TypographyTokens::new(12., 14., 16.),
-            styles: StyleTokens::from_semantic(&semantic),
-            button: ButtonTokens {
-                background: semantic.intent.primary.default,
-                text: semantic.intent.primary.foreground,
-                border: semantic.base.border,
-                hover_background: semantic.intent.primary.hover,
-                active_background: semantic.intent.primary.active,
-                disabled_background: semantic.intent.primary.disabled,
-                disabled_text: semantic.intent.primary.disabled_foreground,
-                size: 120.,
-            },
-        }
+    /// 更新当前激活主题。
+    pub fn set_theme(cx: &mut App, theme: Arc<Theme>) {
+        cx.update_global::<Self, _>(|global, _| {
+            global.theme = theme;
+        });
     }
 }
 
-impl Default for Theme {
+/// 主题加载模式，定义了在应用启动时如何加载主题。
+pub enum ThemeLoadMode {
+    /// 自动 优先使用 [`ThemeLoadMode::Last`] 加载
+    /// 如果上一次不存在则使用 [`ThemeLoadMode::Default`] 加载
+    Auto,
+    /// 上一次使用加载 如果上一次不存在则使用 [`ThemeLoadMode::Default`] 加载
+    Last,
+    /// 全部加载 加载所有可用的主题 但不设置全局主题 需要用户手动设置
+    All,
+    /// 默认加载模式 根据传入 [`ThemeId`] 加载主题
+    /// 如果 [`ThemeId`] 不存在则使用 [`ThemeLoadMode::All`] 加载
+    Default(ThemeId),
+}
+
+/// 主题加载模式的默认实现，默认为自动模式。
+impl Default for ThemeLoadMode {
     fn default() -> Self {
-        active_theme()
+        Self::Auto
     }
 }
 
-impl ThemeKind {
+impl Global for GlobalTheme {}
+
+impl Appearance {
     pub fn resolve_system(self) -> Self {
         match self {
-            ThemeKind::Auto => match dark_light::detect() {
-                Ok(Mode::Light) => ThemeKind::Light,
-                Ok(Mode::Dark) | Ok(Mode::Unspecified) | Err(_) => ThemeKind::Dark,
+            Appearance::Auto => match dark_light::detect() {
+                Ok(Mode::Light) => Appearance::Light,
+                Ok(Mode::Dark) | Ok(Mode::Unspecified) | Err(_) => Appearance::Dark,
             },
             _ => self,
         }
     }
 }
 
-pub fn set_active_theme_kind(kind: ThemeKind) {
-    if let Ok(mut current) = ACTIVE_THEME_KIND.write() {
-        *current = kind;
+impl ThemeVersion {
+    /// 将版本信息格式化为字符串，通常采用 "major.minor.patch" 的格式。
+    pub fn as_string(&self) -> String {
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
     }
 }
 
-pub fn active_theme_kind() -> ThemeKind {
-    ACTIVE_THEME_KIND
-        .read()
-        .map(|kind| *kind)
-        .unwrap_or(ThemeKind::Dark)
+impl Display for ThemeVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
 }
 
-pub fn active_theme() -> Theme {
-    Theme::from_kind(active_theme_kind())
-}
+impl FromStr for ThemeVersion {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split('.').collect();
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ColorTokens {
-    /// 应用背景色。
-    pub background: u32,
-    /// 卡片或容器背景色。
-    pub surface: u32,
-    /// 主文字颜色。
-    pub text_primary: u32,
-    /// 次文字颜色。
-    pub text_secondary: u32,
-    /// 强调色。
-    pub accent: u32,
-    /// 边框颜色。
-    pub border: u32,
-}
-
-impl ColorTokens {
-    fn from_semantic(semantic: &SemanticTokens) -> Self {
-        Self {
-            background: semantic.base.background,
-            surface: semantic.base.card,
-            text_primary: semantic.base.foreground,
-            text_secondary: semantic.intent.muted.foreground,
-            accent: semantic.intent.primary.default,
-            border: semantic.base.border,
+        if parts.len() != 3 {
+            return Err("invalid version format".into());
         }
+
+        Ok(Self {
+            major: parts[0].parse().map_err(|_| "invalid major version")?,
+
+            minor: parts[1].parse().map_err(|_| "invalid minor version")?,
+
+            patch: parts[2].parse().map_err(|_| "invalid patch version")?,
+        })
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct SemanticTokens {
-    pub base: BaseSemanticTokens,
-    pub intent: IntentSemanticTokens,
-    pub state: StateSemanticTokens,
-    pub interactive: InteractiveSurfaceTokens,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BaseSemanticTokens {
-    pub background: u32,
-    pub foreground: u32,
-    pub card: u32,
-    pub card_foreground: u32,
-    pub popover: u32,
-    pub popover_foreground: u32,
-    pub border: u32,
-    pub input: u32,
-    pub ring: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct IntentSemanticTokens {
-    pub primary: InteractiveColorTokens,
-    pub secondary: InteractiveColorTokens,
-    pub destructive: InteractiveColorTokens,
-    pub muted: InteractiveColorTokens,
-    pub accent: InteractiveColorTokens,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct InteractiveColorTokens {
-    pub default: u32,
-    pub foreground: u32,
-    pub hover: u32,
-    pub active: u32,
-    pub disabled: u32,
-    pub disabled_foreground: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StateSemanticTokens {
-    pub success: FeedbackColorTokens,
-    pub warning: FeedbackColorTokens,
-    pub info: FeedbackColorTokens,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct FeedbackColorTokens {
-    pub default: u32,
-    pub foreground: u32,
-    pub subtle: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct InteractiveSurfaceTokens {
-    pub surface_hover: u32,
-    pub surface_active: u32,
-    pub overlay: u32,
-    pub selection: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct SpacingTokens {
-    pub xs: f32,
-    pub sm: f32,
-    pub md: f32,
-    pub lg: f32,
-    pub xl: f32,
-}
-
-impl SpacingTokens {
-    pub const fn new(xs: f32, sm: f32, md: f32, lg: f32, xl: f32) -> Self {
-        Self { xs, sm, md, lg, xl }
+impl Serialize for ThemeVersion {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct RadiusTokens {
-    pub sm: f32,
-    pub md: f32,
-    pub lg: f32,
-}
+impl<'de> Deserialize<'de> for ThemeVersion {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
 
-impl RadiusTokens {
-    pub const fn new(sm: f32, md: f32, lg: f32) -> Self {
-        Self { sm, md, lg }
+        s.parse().map_err(serde::de::Error::custom)
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
-pub struct TypographyTokens {
-    pub sm: f32,
-    pub md: f32,
-    pub lg: f32,
+/// 根据给定 [`ThemeId`] 初始化主题系统
+///
+/// 如果提供的主题 ID 无效，则回退到默认主题 [`DEFAULT_THEME_ID`]。
+pub fn init(theme_id: Option<ThemeId>, cx: &mut App) -> Result<(), ThemeError> {
+    // 初始化全局主题注册表
+    let theme_registry = ThemeRegistry::new(ThemeLoadMode::default());
+    ThemeRegistry::set_global(Some(theme_registry), cx);
+    let theme_registry = ThemeRegistry::default_global(cx);
+
+    let theme_id = theme_id.unwrap_or_else(|| DEFAULT_THEME_ID.into());
+    let theme = theme_registry
+        .get(theme_id)?;
+
+    // 设置全局主题
+    cx.set_global(GlobalTheme { theme });
+
+    Ok(())
 }
-
-impl TypographyTokens {
-    pub const fn new(sm: f32, md: f32, lg: f32) -> Self {
-        Self { sm, md, lg }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StyleTokens {
-    pub elevated_surface: u32,
-    pub muted_surface: u32,
-    pub focus_ring: u32,
-}
-
-impl StyleTokens {
-    fn from_semantic(semantic: &SemanticTokens) -> Self {
-        Self {
-            elevated_surface: semantic.base.popover,
-            muted_surface: semantic.intent.muted.default,
-            focus_ring: semantic.base.ring,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ButtonTokens {
-    pub background: u32,
-    pub text: u32,
-    pub border: u32,
-    pub hover_background: u32,
-    pub active_background: u32,
-    pub disabled_background: u32,
-    pub disabled_text: u32,
-    pub size: f32,
-}
-
-#[derive(Debug)]
-pub enum ThemeLoadError {
-    InvalidJson,
-    InvalidColor,
-}
-
-#[derive(Deserialize)]
-struct ThemeJson {
-    name: String,
-    note: String,
-    semantic: SemanticTokensJson,
-    spacing: SpacingTokens,
-    radius: RadiusTokens,
-    typography: TypographyTokens,
-    button: ButtonTokensJson,
-}
-
-#[derive(Deserialize)]
-struct SemanticTokensJson {
-    base: BaseSemanticTokensJson,
-    intent: IntentSemanticTokensJson,
-    state: StateSemanticTokensJson,
-    interactive: InteractiveSurfaceTokensJson,
-}
-
-#[derive(Deserialize)]
-struct BaseSemanticTokensJson {
-    background: String,
-    foreground: String,
-    card: String,
-    card_foreground: String,
-    popover: String,
-    popover_foreground: String,
-    border: String,
-    input: String,
-    ring: String,
-}
-
-#[derive(Deserialize)]
-struct IntentSemanticTokensJson {
-    primary: InteractiveColorTokensJson,
-    secondary: InteractiveColorTokensJson,
-    destructive: InteractiveColorTokensJson,
-    muted: InteractiveColorTokensJson,
-    accent: InteractiveColorTokensJson,
-}
-
-#[derive(Deserialize)]
-struct InteractiveColorTokensJson {
-    #[serde(rename = "default")]
-    default_color: String,
-    foreground: String,
-    hover: String,
-    active: String,
-    disabled: String,
-    disabled_foreground: String,
-}
-
-#[derive(Deserialize)]
-struct StateSemanticTokensJson {
-    success: FeedbackColorTokensJson,
-    warning: FeedbackColorTokensJson,
-    info: FeedbackColorTokensJson,
-}
-
-#[derive(Deserialize)]
-struct FeedbackColorTokensJson {
-    #[serde(rename = "default")]
-    default_color: String,
-    foreground: String,
-    subtle: String,
-}
-
-#[derive(Deserialize)]
-struct InteractiveSurfaceTokensJson {
-    surface_hover: String,
-    surface_active: String,
-    overlay: String,
-    selection: String,
-}
-
-#[derive(Deserialize)]
-struct ButtonTokensJson {
-    size: f32,
-    variants: ButtonVariantsJson,
-}
-
-#[derive(Deserialize)]
-struct ButtonVariantsJson {
-    primary: ButtonVariantJson,
-    secondary: ButtonVariantJson,
-    destructive: ButtonVariantJson,
-    outline: ButtonVariantJson,
-    ghost: ButtonVariantJson,
-    link: ButtonVariantJson,
-}
-
-#[derive(Deserialize)]
-struct ButtonVariantJson {
-    background: String,
-    foreground: String,
-    border: String,
-    hover_background: String,
-    active_background: String,
-    disabled_background: String,
-    disabled_foreground: String,
-}
-
-fn parse_theme_json(kind: ThemeKind, json: &str) -> Result<Theme, ThemeLoadError> {
-    let raw: ThemeJson = serde_json::from_str(json).map_err(|_| ThemeLoadError::InvalidJson)?;
-    let semantic = parse_semantic_tokens(raw.semantic)?;
-    let _other_variants = (
-        &raw.button.variants.secondary,
-        &raw.button.variants.destructive,
-        &raw.button.variants.outline,
-        &raw.button.variants.ghost,
-        &raw.button.variants.link,
-    );
-
-    Ok(Theme {
-        kind,
-        name: raw.name,
-        note: raw.note,
-        colors: ColorTokens::from_semantic(&semantic),
-        spacing: raw.spacing,
-        radius: raw.radius,
-        typography: raw.typography,
-        styles: StyleTokens::from_semantic(&semantic),
-        semantic,
-        button: ButtonTokens {
-            background: parse_hex_color(&raw.button.variants.primary.background)?,
-            text: parse_hex_color(&raw.button.variants.primary.foreground)?,
-            border: parse_hex_color(&raw.button.variants.primary.border)?,
-            hover_background: parse_hex_color(&raw.button.variants.primary.hover_background)?,
-            active_background: parse_hex_color(&raw.button.variants.primary.active_background)?,
-            disabled_background: parse_hex_color(&raw.button.variants.primary.disabled_background)?,
-            disabled_text: parse_hex_color(&raw.button.variants.primary.disabled_foreground)?,
-            size: raw.button.size,
-        },
-    })
-}
-
-fn parse_semantic_tokens(raw: SemanticTokensJson) -> Result<SemanticTokens, ThemeLoadError> {
-    Ok(SemanticTokens {
-        base: BaseSemanticTokens {
-            background: parse_hex_color(&raw.base.background)?,
-            foreground: parse_hex_color(&raw.base.foreground)?,
-            card: parse_hex_color(&raw.base.card)?,
-            card_foreground: parse_hex_color(&raw.base.card_foreground)?,
-            popover: parse_hex_color(&raw.base.popover)?,
-            popover_foreground: parse_hex_color(&raw.base.popover_foreground)?,
-            border: parse_hex_color(&raw.base.border)?,
-            input: parse_hex_color(&raw.base.input)?,
-            ring: parse_hex_color(&raw.base.ring)?,
-        },
-        intent: IntentSemanticTokens {
-            primary: parse_interactive_color_tokens(raw.intent.primary)?,
-            secondary: parse_interactive_color_tokens(raw.intent.secondary)?,
-            destructive: parse_interactive_color_tokens(raw.intent.destructive)?,
-            muted: parse_interactive_color_tokens(raw.intent.muted)?,
-            accent: parse_interactive_color_tokens(raw.intent.accent)?,
-        },
-        state: StateSemanticTokens {
-            success: parse_feedback_color_tokens(raw.state.success)?,
-            warning: parse_feedback_color_tokens(raw.state.warning)?,
-            info: parse_feedback_color_tokens(raw.state.info)?,
-        },
-        interactive: InteractiveSurfaceTokens {
-            surface_hover: parse_hex_color(&raw.interactive.surface_hover)?,
-            surface_active: parse_hex_color(&raw.interactive.surface_active)?,
-            overlay: parse_hex_color(&raw.interactive.overlay)?,
-            selection: parse_hex_color(&raw.interactive.selection)?,
-        },
-    })
-}
-
-fn parse_interactive_color_tokens(
-    raw: InteractiveColorTokensJson,
-) -> Result<InteractiveColorTokens, ThemeLoadError> {
-    Ok(InteractiveColorTokens {
-        default: parse_hex_color(&raw.default_color)?,
-        foreground: parse_hex_color(&raw.foreground)?,
-        hover: parse_hex_color(&raw.hover)?,
-        active: parse_hex_color(&raw.active)?,
-        disabled: parse_hex_color(&raw.disabled)?,
-        disabled_foreground: parse_hex_color(&raw.disabled_foreground)?,
-    })
-}
-
-fn parse_feedback_color_tokens(raw: FeedbackColorTokensJson) -> Result<FeedbackColorTokens, ThemeLoadError> {
-    Ok(FeedbackColorTokens {
-        default: parse_hex_color(&raw.default_color)?,
-        foreground: parse_hex_color(&raw.foreground)?,
-        subtle: parse_hex_color(&raw.subtle)?,
-    })
-}
-
-fn parse_hex_color(input: &str) -> Result<u32, ThemeLoadError> {
-    let trimmed = input.trim();
-    let hex = trimmed.strip_prefix('#').unwrap_or(trimmed);
-    if hex.len() != 6 {
-        return Err(ThemeLoadError::InvalidColor);
-    }
-
-    u32::from_str_radix(hex, 16).map_err(|_| ThemeLoadError::InvalidColor)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{active_theme, set_active_theme_kind, Theme, ThemeKind};
-
-    #[test]
-    fn creates_light_and_dark_themes_from_json() {
-        let light = Theme::from_kind(ThemeKind::Light);
-        let dark = Theme::from_kind(ThemeKind::Dark);
-
-        assert_ne!(light.colors.background, dark.colors.background);
-        assert!(light.button.size > 0.);
-        assert_ne!(light.semantic.intent.primary.default, dark.semantic.intent.primary.default);
-        assert!(dark.button.size > 0.);
-        assert_eq!(light.name, "light");
-        assert_eq!(dark.name, "dark");
-    }
-
-    #[test]
-    fn auto_theme_can_be_activated() {
-        set_active_theme_kind(ThemeKind::Auto);
-        let theme = active_theme();
-
-        assert!(theme.button.size > 0.);
-    }
-}
-

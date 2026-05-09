@@ -11,7 +11,8 @@ name = "theme"
 path = "src/theme.rs"
 
 [dependencies]
-dark-light = "2.0"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-
+dark-light.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+gpui.workspace = true
+thiserror.workspace = true
