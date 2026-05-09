@@ -1,0 +1,159 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "dark",
+  "note": "基于 shadcn/ui 语义令牌的深色主题，适合夜间与低亮环境。",
+  "semantic": {
+    "base": {
+      "background": "#020817",
+      "foreground": "#f8fafc",
+      "card": "#020817",
+      "card_foreground": "#f8fafc",
+      "popover": "#020817",
+      "popover_foreground": "#f8fafc",
+      "border": "#1e293b",
+      "input": "#1e293b",
+      "ring": "#334155"
+    },
+    "intent": {
+      "primary": {
+        "default": "#f8fafc",
+        "foreground": "#0f172a",
+        "hover": "#e2e8f0",
+        "active": "#cbd5e1",
+        "disabled": "#334155",
+        "disabled_foreground": "#64748b"
+      },
+      "secondary": {
+        "default": "#1e293b",
+        "foreground": "#f8fafc",
+        "hover": "#334155",
+        "active": "#475569",
+        "disabled": "#1f2937",
+        "disabled_foreground": "#64748b"
+      },
+      "destructive": {
+        "default": "#7f1d1d",
+        "foreground": "#fef2f2",
+        "hover": "#991b1b",
+        "active": "#b91c1c",
+        "disabled": "#450a0a",
+        "disabled_foreground": "#fecaca"
+      },
+      "muted": {
+        "default": "#1e293b",
+        "foreground": "#94a3b8",
+        "hover": "#334155",
+        "active": "#475569",
+        "disabled": "#1f2937",
+        "disabled_foreground": "#64748b"
+      },
+      "accent": {
+        "default": "#1e293b",
+        "foreground": "#f8fafc",
+        "hover": "#334155",
+        "active": "#475569",
+        "disabled": "#1f2937",
+        "disabled_foreground": "#64748b"
+      }
+    },
+    "state": {
+      "success": {
+        "default": "#22c55e",
+        "foreground": "#052e16",
+        "subtle": "#14532d"
+      },
+      "warning": {
+        "default": "#f59e0b",
+        "foreground": "#451a03",
+        "subtle": "#78350f"
+      },
+      "info": {
+        "default": "#3b82f6",
+        "foreground": "#172554",
+        "subtle": "#1e3a8a"
+      }
+    },
+    "interactive": {
+      "surface_hover": "#111827",
+      "surface_active": "#1f2937",
+      "overlay": "#000000",
+      "selection": "#1d4ed8"
+    }
+  },
+  "spacing": {
+    "xs": 4.0,
+    "sm": 8.0,
+    "md": 12.0,
+    "lg": 16.0,
+    "xl": 24.0
+  },
+  "radius": {
+    "sm": 4.0,
+    "md": 8.0,
+    "lg": 12.0
+  },
+  "typography": {
+    "sm": 12.0,
+    "md": 14.0,
+    "lg": 16.0
+  },
+  "button": {
+    "size": 120.0,
+    "variants": {
+      "primary": {
+        "background": "#f8fafc",
+        "foreground": "#0f172a",
+        "border": "#f8fafc",
+        "hover_background": "#e2e8f0",
+        "active_background": "#cbd5e1",
+        "disabled_background": "#334155",
+        "disabled_foreground": "#64748b"
+      },
+      "secondary": {
+        "background": "#1e293b",
+        "foreground": "#f8fafc",
+        "border": "#334155",
+        "hover_background": "#334155",
+        "active_background": "#475569",
+        "disabled_background": "#1f2937",
+        "disabled_foreground": "#64748b"
+      },
+      "destructive": {
+        "background": "#7f1d1d",
+        "foreground": "#fef2f2",
+        "border": "#7f1d1d",
+        "hover_background": "#991b1b",
+        "active_background": "#b91c1c",
+        "disabled_background": "#450a0a",
+        "disabled_foreground": "#fecaca"
+      },
+      "outline": {
+        "background": "#020817",
+        "foreground": "#f8fafc",
+        "border": "#334155",
+        "hover_background": "#111827",
+        "active_background": "#1f2937",
+        "disabled_background": "#020817",
+        "disabled_foreground": "#64748b"
+      },
+      "ghost": {
+        "background": "#020817",
+        "foreground": "#f8fafc",
+        "border": "#020817",
+        "hover_background": "#111827",
+        "active_background": "#1f2937",
+        "disabled_background": "#020817",
+        "disabled_foreground": "#64748b"
+      },
+      "link": {
+        "background": "#020817",
+        "foreground": "#f8fafc",
+        "border": "#020817",
+        "hover_background": "#020817",
+        "active_background": "#020817",
+        "disabled_background": "#020817",
+        "disabled_foreground": "#64748b"
+      }
+    }
+  }
+}

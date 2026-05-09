@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://akiyoshi.local/theme.schema.json",
+  "title": "Akiyoshi Theme (shadcn semantic tokens)",
+  "description": "Comprehensive semantic theme schema aligned with shadcn-style token naming.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^\\$schema$": {
+      "type": "string",
+      "description": "Optional self-reference to this schema file.",
+      "examples": ["./theme.schema.json"]
+    }
+  },
+  "required": [
+    "name",
+    "note",
+    "semantic",
+    "spacing",
+    "radius",
+    "typography",
+    "button"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semantic": {
+      "$ref": "#/$defs/semanticTokens"
+    },
+    "spacing": {
+      "$ref": "#/$defs/spacingTokens"
+    },
+    "radius": {
+      "$ref": "#/$defs/radiusTokens"
+    },
+    "typography": {
+      "$ref": "#/$defs/typographyTokens"
+    },
+    "button": {
+      "$ref": "#/$defs/buttonTokens"
+    }
+  },
+  "$defs": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$"
+    },
+    "semanticTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base", "intent", "state", "interactive"],
+      "properties": {
+        "base": {
+          "$ref": "#/$defs/baseSemanticTokens"
+        },
+        "intent": {
+          "$ref": "#/$defs/intentSemanticTokens"
+        },
+        "state": {
+          "$ref": "#/$defs/stateSemanticTokens"
+        },
+        "interactive": {
+          "$ref": "#/$defs/interactiveSemanticTokens"
+        }
+      }
+    },
+    "baseSemanticTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "background",
+        "foreground",
+        "card",
+        "card_foreground",
+        "popover",
+        "popover_foreground",
+        "border",
+        "input",
+        "ring"
+      ],
+      "properties": {
+        "background": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "card": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "card_foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "popover": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "popover_foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "border": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "input": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "ring": {
+          "$ref": "#/$defs/hexColor"
+        }
+      }
+    },
+    "intentSemanticTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "secondary", "destructive", "muted", "accent"],
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/interactiveColorRole"
+        },
+        "secondary": {
+          "$ref": "#/$defs/interactiveColorRole"
+        },
+        "destructive": {
+          "$ref": "#/$defs/interactiveColorRole"
+        },
+        "muted": {
+          "$ref": "#/$defs/interactiveColorRole"
+        },
+        "accent": {
+          "$ref": "#/$defs/interactiveColorRole"
+        }
+      }
+    },
+    "interactiveColorRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default",
+        "foreground",
+        "hover",
+        "active",
+        "disabled",
+        "disabled_foreground"
+      ],
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "hover": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "active": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "disabled": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "disabled_foreground": {
+          "$ref": "#/$defs/hexColor"
+        }
+      }
+    },
+    "stateSemanticTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["success", "warning", "info"],
+      "properties": {
+        "success": {
+          "$ref": "#/$defs/feedbackColorRole"
+        },
+        "warning": {
+          "$ref": "#/$defs/feedbackColorRole"
+        },
+        "info": {
+          "$ref": "#/$defs/feedbackColorRole"
+        }
+      }
+    },
+    "feedbackColorRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default", "foreground", "subtle"],
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "subtle": {
+          "$ref": "#/$defs/hexColor"
+        }
+      }
+    },
+    "interactiveSemanticTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface_hover", "surface_active", "overlay", "selection"],
+      "properties": {
+        "surface_hover": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "surface_active": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "overlay": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "selection": {
+          "$ref": "#/$defs/hexColor"
+        }
+      }
+    },
+    "spacingTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["xs", "sm", "md", "lg", "xl"],
+      "properties": {
+        "xs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "md": {
+          "type": "number",
+          "minimum": 0
+        },
+        "lg": {
+          "type": "number",
+          "minimum": 0
+        },
+        "xl": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "radiusTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sm", "md", "lg"],
+      "properties": {
+        "sm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "md": {
+          "type": "number",
+          "minimum": 0
+        },
+        "lg": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "typographyTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sm", "md", "lg"],
+      "properties": {
+        "sm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "md": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "lg": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "buttonTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["size", "variants"],
+      "properties": {
+        "size": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "variants": {
+          "$ref": "#/$defs/buttonVariants"
+        }
+      }
+    },
+    "buttonVariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "secondary", "destructive", "outline", "ghost", "link"],
+      "properties": {
+        "primary": {
+          "$ref": "#/$defs/buttonVariant"
+        },
+        "secondary": {
+          "$ref": "#/$defs/buttonVariant"
+        },
+        "destructive": {
+          "$ref": "#/$defs/buttonVariant"
+        },
+        "outline": {
+          "$ref": "#/$defs/buttonVariant"
+        },
+        "ghost": {
+          "$ref": "#/$defs/buttonVariant"
+        },
+        "link": {
+          "$ref": "#/$defs/buttonVariant"
+        }
+      }
+    },
+    "buttonVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "background",
+        "foreground",
+        "border",
+        "hover_background",
+        "active_background",
+        "disabled_background",
+        "disabled_foreground"
+      ],
+      "properties": {
+        "background": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "foreground": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "border": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "hover_background": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "active_background": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "disabled_background": {
+          "$ref": "#/$defs/hexColor"
+        },
+        "disabled_foreground": {
+          "$ref": "#/$defs/hexColor"
+        }
+      }
+    }
+  }
+}
+

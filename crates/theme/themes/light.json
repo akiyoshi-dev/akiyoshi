@@ -1,0 +1,159 @@
+{
+  "$schema": "./theme.schema.json",
+  "name": "light",
+  "note": "基于 shadcn/ui 语义令牌的浅色主题，适合白天与高亮环境。",
+  "semantic": {
+    "base": {
+      "background": "#ffffff",
+      "foreground": "#020817",
+      "card": "#ffffff",
+      "card_foreground": "#020817",
+      "popover": "#ffffff",
+      "popover_foreground": "#020817",
+      "border": "#e2e8f0",
+      "input": "#e2e8f0",
+      "ring": "#94a3b8"
+    },
+    "intent": {
+      "primary": {
+        "default": "#0f172a",
+        "foreground": "#f8fafc",
+        "hover": "#1e293b",
+        "active": "#334155",
+        "disabled": "#94a3b8",
+        "disabled_foreground": "#e2e8f0"
+      },
+      "secondary": {
+        "default": "#f1f5f9",
+        "foreground": "#0f172a",
+        "hover": "#e2e8f0",
+        "active": "#cbd5e1",
+        "disabled": "#f8fafc",
+        "disabled_foreground": "#94a3b8"
+      },
+      "destructive": {
+        "default": "#ef4444",
+        "foreground": "#fef2f2",
+        "hover": "#dc2626",
+        "active": "#b91c1c",
+        "disabled": "#fca5a5",
+        "disabled_foreground": "#fee2e2"
+      },
+      "muted": {
+        "default": "#f1f5f9",
+        "foreground": "#64748b",
+        "hover": "#e2e8f0",
+        "active": "#cbd5e1",
+        "disabled": "#f8fafc",
+        "disabled_foreground": "#94a3b8"
+      },
+      "accent": {
+        "default": "#f1f5f9",
+        "foreground": "#0f172a",
+        "hover": "#e2e8f0",
+        "active": "#cbd5e1",
+        "disabled": "#f8fafc",
+        "disabled_foreground": "#94a3b8"
+      }
+    },
+    "state": {
+      "success": {
+        "default": "#22c55e",
+        "foreground": "#052e16",
+        "subtle": "#dcfce7"
+      },
+      "warning": {
+        "default": "#f59e0b",
+        "foreground": "#451a03",
+        "subtle": "#fef3c7"
+      },
+      "info": {
+        "default": "#3b82f6",
+        "foreground": "#172554",
+        "subtle": "#dbeafe"
+      }
+    },
+    "interactive": {
+      "surface_hover": "#f8fafc",
+      "surface_active": "#f1f5f9",
+      "overlay": "#0f172a",
+      "selection": "#bfdbfe"
+    }
+  },
+  "spacing": {
+    "xs": 4.0,
+    "sm": 8.0,
+    "md": 12.0,
+    "lg": 16.0,
+    "xl": 24.0
+  },
+  "radius": {
+    "sm": 4.0,
+    "md": 8.0,
+    "lg": 12.0
+  },
+  "typography": {
+    "sm": 12.0,
+    "md": 14.0,
+    "lg": 16.0
+  },
+  "button": {
+    "size": 120.0,
+    "variants": {
+      "primary": {
+        "background": "#0f172a",
+        "foreground": "#f8fafc",
+        "border": "#0f172a",
+        "hover_background": "#1e293b",
+        "active_background": "#334155",
+        "disabled_background": "#94a3b8",
+        "disabled_foreground": "#e2e8f0"
+      },
+      "secondary": {
+        "background": "#f1f5f9",
+        "foreground": "#0f172a",
+        "border": "#e2e8f0",
+        "hover_background": "#e2e8f0",
+        "active_background": "#cbd5e1",
+        "disabled_background": "#f8fafc",
+        "disabled_foreground": "#94a3b8"
+      },
+      "destructive": {
+        "background": "#ef4444",
+        "foreground": "#fef2f2",
+        "border": "#ef4444",
+        "hover_background": "#dc2626",
+        "active_background": "#b91c1c",
+        "disabled_background": "#fca5a5",
+        "disabled_foreground": "#fee2e2"
+      },
+      "outline": {
+        "background": "#ffffff",
+        "foreground": "#0f172a",
+        "border": "#e2e8f0",
+        "hover_background": "#f8fafc",
+        "active_background": "#f1f5f9",
+        "disabled_background": "#ffffff",
+        "disabled_foreground": "#94a3b8"
+      },
+      "ghost": {
+        "background": "#ffffff",
+        "foreground": "#0f172a",
+        "border": "#ffffff",
+        "hover_background": "#f8fafc",
+        "active_background": "#f1f5f9",
+        "disabled_background": "#ffffff",
+        "disabled_foreground": "#94a3b8"
+      },
+      "link": {
+        "background": "#ffffff",
+        "foreground": "#0f172a",
+        "border": "#ffffff",
+        "hover_background": "#ffffff",
+        "active_background": "#ffffff",
+        "disabled_background": "#ffffff",
+        "disabled_foreground": "#94a3b8"
+      }
+    }
+  }
+}

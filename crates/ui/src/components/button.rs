@@ -1,3 +1,5 @@
-pub(super) mod button;
+mod button;
 mod button_like;
+
+pub use button::*;
 
