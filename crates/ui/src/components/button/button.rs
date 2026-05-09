@@ -45,6 +45,6 @@ impl Clickable for Button {
 
 impl Styled for Button {
     fn style(&mut self) -> &mut StyleRefinement {
-        self.content.content.style()
+        self.content.style()
     }
 }
