@@ -39,6 +39,7 @@ impl RenderOnce for ButtonLike {
             .flex()
             .items_center()
             .justify_center()
+            .cursor_pointer()
             .bg(rgb(theme.styles.colors.primary.into()))
             .text_color(rgb(theme.styles.colors.text.inverted.into()))
             .text_size(px(theme.styles.typography.md))
