@@ -1,8 +1,5 @@
-use crate::{
-    clickable::{ClickHandlerFn, Clickable},
-    components::button::button_like::ButtonLike,
-};
-use gpui::{App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Window, prelude::FluentBuilder, Styled, StyleRefinement};
+use crate::{clickable::Clickable, components::button::button_like::ButtonLike};
+use gpui::{App, ClickEvent, Context, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, Window, prelude::FluentBuilder, Styled, StyleRefinement};
 
 /// 按钮组件。
 #[derive(IntoElement)]
@@ -24,6 +21,19 @@ impl Button {
         self.label = Some(label.into());
         self
     }
+
+    /// 为按钮添加点击事件处理器。
+    ///
+    /// 闭包签名为 `|this: &mut V, event: &ClickEvent, window: &mut Window, cx: &mut Context<V>|`，
+    /// 无需在调用方手动写 `cx.listener(...)`。
+    pub fn on_click<V, F>(mut self, cx: &Context<V>, handler: F) -> Self
+    where
+        V: 'static,
+        F: Fn(&mut V, &ClickEvent, &mut Window, &mut Context<V>) + 'static,
+    {
+        self.content = self.content.on_click(cx.listener(handler));
+        self
+    }
 }
 
 impl RenderOnce for Button {
@@ -33,15 +43,6 @@ impl RenderOnce for Button {
     }
 }
 
-impl Clickable for Button {
-    fn on_click<H>(mut self, handler: H) -> Self
-    where
-        H: ClickHandlerFn,
-    {
-        self.content = self.content.on_click(handler);
-        self
-    }
-}
 
 impl Styled for Button {
     fn style(&mut self) -> &mut StyleRefinement {

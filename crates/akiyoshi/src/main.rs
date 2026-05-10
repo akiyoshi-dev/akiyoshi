@@ -1,10 +1,12 @@
+mod views;
+
 use gpui::{
     App, AppContext, Bounds, Context, IntoElement, ParentElement, Render, Styled, Window,
     WindowBounds, WindowOptions, div, px, rgb, size,
 };
 use gpui_platform::application;
 use theme::{GlobalTheme, ThemeId};
-use ui::{Button, clickable::Clickable};
+use ui::Button;
 
 struct HelloWorld {
     theme_id: ThemeId,
@@ -43,11 +45,11 @@ impl Render for HelloWorld {
                     .child(
                         Button::new("theme-button")
                             .label(button_label)
-                            .on_click(cx.listener(|this, _event, _window, cx| {
+                            .on_click(cx, |this, _event, _window, cx| {
                                 this.theme_id = this.next_theme_id();
                                 let _ = theme::init(Some(this.theme_id.clone()), cx);
                                 cx.notify();
-                            }))
+                            })
                     )
                     .h(px(120.))
                     .px(px(125.0))
