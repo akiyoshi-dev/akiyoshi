@@ -1,8 +1,10 @@
 use crate::ThemeError;
-use gpui::{Hsla, hsla};
+use gpui::{Hsla, hsla, Rgba, rgba, rgb};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{Display, Formatter};
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter},
+    str::FromStr
+};
 
 /// 颜色标记定义主题中使用的颜色值，通常以十六进制格式表示，例如 `#RRGGBB` 或 `#AARRGGBB`。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -158,6 +160,22 @@ impl HexColor {
     pub fn a(self) -> u8 {
         ((self.0 >> 24) & 0xff) as u8
     }
+
+    pub fn as_hex_string(self) -> String {
+        if self.0 <= 0xffffff {
+            format!("#{:06x}", self.0)
+        } else {
+            format!("#{:08x}", self.0)
+        }
+    }
+
+    pub fn rgb(self) -> Rgba {
+        rgb(self.into())
+    }
+
+    pub fn rgba(self) -> Rgba {
+        rgba(self.into())
+    }
 }
 
 impl Display for HexColor {
@@ -233,5 +251,11 @@ impl From<HexColor> for Hsla {
 impl Into<u32> for HexColor {
     fn into(self) -> u32 {
         self.0
+    }
+}
+
+impl Into<Rgba> for HexColor {
+    fn into(self) -> Rgba {
+        rgba(self.into())
     }
 }

@@ -9,7 +9,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{
+pub use crate::{
     registry::ThemeRegistry,
     styles::{ColorTokens, RadiusTokens, SpacingTokens, TypographyTokens},
 };
@@ -200,18 +200,18 @@ impl<'de> Deserialize<'de> for ThemeVersion {
 /// 根据给定 [`ThemeId`] 初始化主题系统
 ///
 /// 如果提供的主题 ID 无效，则回退到默认主题 [`DEFAULT_THEME_ID`]。
-pub fn init(theme_id: Option<ThemeId>, cx: &mut App) -> Result<(), ThemeError> {
+/// 返回当前使用的主题 ID。
+pub fn init(theme_id: Option<ThemeId>, cx: &mut App) -> Result<ThemeId, ThemeError> {
     // 初始化全局主题注册表
     let theme_registry = ThemeRegistry::new(ThemeLoadMode::default());
     ThemeRegistry::set_global(Some(theme_registry), cx);
     let theme_registry = ThemeRegistry::default_global(cx);
 
     let theme_id = theme_id.unwrap_or_else(|| DEFAULT_THEME_ID.into());
-    let theme = theme_registry
-        .get(theme_id)?;
+    let theme = theme_registry.get(theme_id.clone())?;
 
     // 设置全局主题
     cx.set_global(GlobalTheme { theme });
 
-    Ok(())
+    Ok(theme_id)
 }

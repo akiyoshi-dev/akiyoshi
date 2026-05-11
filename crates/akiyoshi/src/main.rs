@@ -1,84 +1,46 @@
+mod states;
 mod views;
 
-use gpui::{
-    App, AppContext, Bounds, Context, IntoElement, ParentElement, Render, Styled, Window,
-    WindowBounds, WindowOptions, div, px, rgb, size,
-};
+use gpui::{App, AppContext, Bounds, WindowBounds, WindowOptions, px, size};
 use gpui_platform::application;
-use theme::{GlobalTheme, ThemeId};
-use ui::Button;
 
-struct HelloWorld {
-    theme_id: ThemeId,
-}
-
-impl HelloWorld {
-    fn next_theme_id(&self) -> ThemeId {
-        if self.theme_id.as_ref() == "akiyoshi_dark" {
-            "akiyoshi_light".into()
-        } else {
-            "akiyoshi_dark".into()
-        }
-    }
-}
-
-impl Render for HelloWorld {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = GlobalTheme::theme(cx);
-        let next_theme = self.next_theme_id();
-        let button_label = if next_theme.as_ref() == "akiyoshi_light" {
-            "切换到 Light"
-        } else {
-            "切换到 Dark"
-        };
-
-        div()
-            .bg(rgb(theme.styles.colors.background.into()))
-            .text_color(rgb(theme.styles.colors.text.primary.into()))
-            .items_center()
-            .justify_center()
-            .child(
-                div()
-                    .flex()
-                    .justify_center()
-                    .items_center()
-                    .child(
-                        Button::new("theme-button")
-                            .label(button_label)
-                            .on_click(cx, |this, _event, _window, cx| {
-                                this.theme_id = this.next_theme_id();
-                                let _ = theme::init(Some(this.theme_id.clone()), cx);
-                                cx.notify();
-                            })
-                    )
-                    .h(px(120.))
-                    .px(px(125.0))
-                ,
-            )
-    }
-}
+use crate::views::Akiyoshi;
+use states::AppState;
 
 fn main() {
-    application().run(|cx: &mut App| {
+    // 创建应用
+    let app = application();
+
+    // 创建应用状态实例
+    let mut state = AppState::new(None);
+
+    app.run(|cx: &mut App| {
+        cx.activate(true);
+
         // 初始化主题
-        theme::init(None, cx).unwrap();
+        let theme_id = theme::init(state.theme_id.clone(), cx).unwrap();
+
+        // 更新主题
+        state.theme_id = Some(theme_id);
+
+        // 创建应用状态
+        let state = cx.new(|_| state);
+
+        // 创建应用
+        let akiyoshi = Akiyoshi::new(state);
 
         let primary_display = cx.primary_display();
         let window_size = size(px(500.), px(500.));
         let bounds = Bounds::centered(primary_display.as_ref().map(|d| d.id()), window_size, cx);
+
         cx.open_window(
             WindowOptions {
                 display_id: primary_display.map(|d| d.id()),
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |_, cx| {
-                cx.new(|_cx| HelloWorld {
-                    theme_id: theme::DEFAULT_THEME_ID.into(),
-                })
-            },
+            |_, cx| cx.new(|_| akiyoshi),
         )
         .unwrap();
-        cx.activate(true);
     });
 }

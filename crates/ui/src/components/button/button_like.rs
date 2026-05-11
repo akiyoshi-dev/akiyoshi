@@ -1,5 +1,9 @@
 use crate::clickable::{BoxedClickHandler, ClickHandlerFn, Clickable};
-use gpui::{div, prelude::FluentBuilder, px, rgb, AnyElement, App, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, Refineable, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window};
+use gpui::{
+    AnyElement, App, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement, Refineable,
+    RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder, px, rgb,
+};
 use smallvec::SmallVec;
 use theme::GlobalTheme;
 
@@ -43,8 +47,8 @@ impl RenderOnce for ButtonLike {
             .bg(rgb(theme.styles.colors.primary.into()))
             .text_color(rgb(theme.styles.colors.text.inverted.into()))
             .text_size(px(theme.styles.typography.md))
-            .pl(px(theme.styles.spacing.xl))
-            .pr(px(theme.styles.spacing.xl))
+            .pl(px(theme.styles.spacing.md))
+            .pr(px(theme.styles.spacing.md))
             .rounded(px(theme.styles.radius.md))
             .border_1()
             .border_color(Hsla::from(theme.styles.colors.primary));
@@ -52,16 +56,17 @@ impl RenderOnce for ButtonLike {
         // 将用户自定义样式覆盖到主题默认值之上
         base.style().refine(&self.user_style);
 
+        // 绑定点击事件
         base.when_some(
-                self.on_click.filter(|_| !self.disabled),
-                |this, on_click| {
-                    this.on_click(move |event, window, cx| {
-                        cx.stop_propagation();
-                        on_click(event, window, cx);
-                    })
-                },
-            )
-            .children(self.children)
+            self.on_click.filter(|_| !self.disabled),
+            |this, on_click| {
+                this.on_click(move |event, window, cx| {
+                    cx.stop_propagation();
+                    on_click(event, window, cx);
+                })
+            },
+        )
+        .children(self.children)
     }
 }
 
@@ -86,4 +91,3 @@ impl Styled for ButtonLike {
         &mut self.user_style
     }
 }
-
