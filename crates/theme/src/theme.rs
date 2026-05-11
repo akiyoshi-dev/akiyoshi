@@ -98,8 +98,8 @@ pub struct GlobalTheme {
 
 impl GlobalTheme {
     /// 返回当前激活主题。
-    pub fn theme(cx: &App) -> Arc<Theme> {
-        cx.global::<Self>().theme.clone()
+    pub fn theme(cx: &App) -> &Arc<Theme> {
+        &cx.global::<Self>().theme
     }
 
     /// 更新当前激活主题。
@@ -119,6 +119,16 @@ impl GlobalTheme {
             global.theme = theme;
         });
         Ok(theme_id)
+    }
+}
+
+pub trait ActiveTheme {
+    fn theme(&self) -> &Arc<Theme>;
+}
+
+impl ActiveTheme for App {
+    fn theme(&self) -> &Arc<Theme> {
+        GlobalTheme::theme(self)
     }
 }
 

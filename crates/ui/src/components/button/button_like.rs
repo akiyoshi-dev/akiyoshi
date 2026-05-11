@@ -5,7 +5,7 @@ use gpui::{
     StyleRefinement, Styled, Window,
 };
 use smallvec::SmallVec;
-use theme::GlobalTheme;
+use theme::ActiveTheme;
 
 #[derive(IntoElement)]
 pub struct ButtonLike {
@@ -35,7 +35,7 @@ impl ButtonLike {
 
 impl RenderOnce for ButtonLike {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = GlobalTheme::theme(cx);
+        let theme = cx.theme();
         let primary = theme.styles.colors.primary;
 
         // 先建立主题默认样式的基础 div
