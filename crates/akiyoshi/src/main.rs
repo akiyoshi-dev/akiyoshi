@@ -26,9 +26,6 @@ fn main() {
         // 创建应用状态
         let state = cx.new(|_| state);
 
-        // 创建应用
-        let akiyoshi = Akiyoshi::new(state);
-
         let primary_display = cx.primary_display();
         let window_size = size(px(500.), px(500.));
         let bounds = Bounds::centered(primary_display.as_ref().map(|d| d.id()), window_size, cx);
@@ -39,7 +36,8 @@ fn main() {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
                 ..Default::default()
             },
-            |_, cx| cx.new(|_| akiyoshi),
+            // 传入 cx，以便 Akiyoshi::new 可以注册 observe_global
+            |_, cx| cx.new(|cx| Akiyoshi::new(state, cx)),
         )
         .unwrap();
     });

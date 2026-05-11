@@ -108,6 +108,18 @@ impl GlobalTheme {
             global.theme = theme;
         });
     }
+
+    /// 通过 ThemeId 切换主题。
+    /// 从全局注册表中查找主题，更新 GlobalTheme，触发所有订阅者刷新。
+    pub fn switch_theme(theme_id: impl Into<ThemeId>, cx: &mut App) -> Result<ThemeId, ThemeError> {
+        let theme_id: ThemeId = theme_id.into();
+        let registry = ThemeRegistry::default_global(cx);
+        let theme = registry.get(theme_id.clone())?;
+        cx.update_global::<Self, _>(|global, _| {
+            global.theme = theme;
+        });
+        Ok(theme_id)
+    }
 }
 
 /// 主题加载模式，定义了在应用启动时如何加载主题。
@@ -199,19 +211,29 @@ impl<'de> Deserialize<'de> for ThemeVersion {
 
 /// 根据给定 [`ThemeId`] 初始化主题系统
 ///
+/// 注册表只在首次调用时创建，后续调用只切换当前主题。
 /// 如果提供的主题 ID 无效，则回退到默认主题 [`DEFAULT_THEME_ID`]。
 /// 返回当前使用的主题 ID。
 pub fn init(theme_id: Option<ThemeId>, cx: &mut App) -> Result<ThemeId, ThemeError> {
-    // 初始化全局主题注册表
-    let theme_registry = ThemeRegistry::new(ThemeLoadMode::default());
-    ThemeRegistry::set_global(Some(theme_registry), cx);
-    let theme_registry = ThemeRegistry::default_global(cx);
+    // 若注册表尚未初始化则创建；default_global 只在不存在时插入默认值
+    // 但默认值是空的，所以只在首次（GlobalTheme 还不存在）时显式 set_global
+    if cx.try_global::<GlobalTheme>().is_none() {
+        let theme_registry = ThemeRegistry::new(ThemeLoadMode::default());
+        ThemeRegistry::set_global(Some(theme_registry), cx);
+    }
 
+    let registry = ThemeRegistry::default_global(cx);
     let theme_id = theme_id.unwrap_or_else(|| DEFAULT_THEME_ID.into());
-    let theme = theme_registry.get(theme_id.clone())?;
+    let theme = registry.get(theme_id.clone())?;
 
-    // 设置全局主题
-    cx.set_global(GlobalTheme { theme });
+    // 首次：直接 set_global；后续切换通过 switch_theme，这里统一处理
+    if cx.try_global::<GlobalTheme>().is_some() {
+        cx.update_global::<GlobalTheme, _>(|global, _| {
+            global.theme = theme;
+        });
+    } else {
+        cx.set_global(GlobalTheme { theme });
+    }
 
     Ok(theme_id)
 }

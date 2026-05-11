@@ -145,22 +145,27 @@ impl FromStr for HexColor {
 }
 
 impl HexColor {
+    /// 从十六进制颜色值中提取红色分量，返回一个 0-255 范围内的 `u8` 值。
     pub fn r(self) -> u8 {
         ((self.0 >> 16) & 0xff) as u8
     }
 
+    /// 从十六进制颜色值中提取绿色分量，返回一个 0-255 范围内的 `u8` 值。
     pub fn g(self) -> u8 {
         ((self.0 >> 8) & 0xff) as u8
     }
 
+    /// 从十六进制颜色值中提取蓝色分量，返回一个 0-255 范围内的 `u8` 值。
     pub fn b(self) -> u8 {
         (self.0 & 0xff) as u8
     }
 
+    /// 从十六进制颜色值中提取 alpha 分量，返回一个 0-255 范围内的 `u8` 值。
     pub fn a(self) -> u8 {
         ((self.0 >> 24) & 0xff) as u8
     }
 
+    /// 将十六进制颜色转换为字符串表示，格式为 `#RRGGBB` 或 `#AARRGGBB`，取决于是否包含 alpha 通道。
     pub fn as_hex_string(self) -> String {
         if self.0 <= 0xffffff {
             format!("#{:06x}", self.0)
@@ -169,12 +174,31 @@ impl HexColor {
         }
     }
 
+    /// 将十六进制颜色转换为 RGB 颜色对象。
     pub fn rgb(self) -> Rgba {
         rgb(self.into())
     }
 
+    /// 将十六进制颜色转换为 RGBA 颜色对象，如果十六进制颜色包含 alpha 通道则使用它，否则默认 alpha 为 255。
     pub fn rgba(self) -> Rgba {
         rgba(self.into())
+    }
+
+    /// 将颜色压暗一定比例，返回新的颜色值（保留原 alpha）。
+    pub fn darken(self, amount: f32) -> Self {
+        let amount = amount.clamp(0.0, 1.0);
+        let scale = 1.0 - amount;
+        let r = (self.r() as f32 * scale).round() as u32;
+        let g = (self.g() as f32 * scale).round() as u32;
+        let b = (self.b() as f32 * scale).round() as u32;
+
+        // 对于 #RRGGBB 保持 RGB 编码；只有原始值已包含 alpha 时才保留 alpha。
+        if self.0 <= 0x00ff_ffff {
+            HexColor((r << 16) | (g << 8) | b)
+        } else {
+            let a = self.a() as u32;
+            HexColor((a << 24) | (r << 16) | (g << 8) | b)
+        }
     }
 }
 
@@ -254,8 +278,8 @@ impl Into<u32> for HexColor {
     }
 }
 
-impl Into<Rgba> for HexColor {
-    fn into(self) -> Rgba {
-        rgba(self.into())
+impl From<HexColor> for Rgba {
+    fn from(value: HexColor) -> Self {
+        rgba(value.into())
     }
 }
