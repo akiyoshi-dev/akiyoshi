@@ -11,6 +11,34 @@ use gpui::{
 use smallvec::SmallVec;
 use theme::{ActiveTheme, GlobalTheme};
 
+/// 按钮尺寸，控制文字大小与内边距，适配不同场景（标题栏、工具栏、正文、突出操作）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ButtonSize {
+    /// 极小尺寸，适合密集工具栏或行内操作（高度约 15px）。
+    Xs,
+    /// 小尺寸，适合标题栏、侧边栏等紧凑场景（高度约 22px）。
+    Sm,
+    /// 默认尺寸，适合大多数正文场景（高度约 26px）。
+    #[default]
+    Md,
+    /// 大尺寸，适合落地页、突出操作等场景（高度约 36px）。
+    Lg,
+}
+
+impl ButtonSize {
+    /// 返回 (text_px, pad_y_px, pad_x_px)
+    fn sizing(self, theme: &theme::Theme) -> (f32, f32, f32) {
+        let s = &theme.styles.spacing;
+        let t = &theme.styles.typography;
+        match self {
+            ButtonSize::Xs => (11.0, 1.0, 6.0),
+            ButtonSize::Sm => (13.0, 3.0, s.sm + 2.0),  // 13px text, 3px py, 10px px
+            ButtonSize::Md => (t.md, s.xs, s.md),
+            ButtonSize::Lg => (t.lg, s.sm, s.lg),
+        }
+    }
+}
+
 pub enum ButtonVariant {
     /// 主按钮，通常用于强调主要操作，具有较高的视觉优先级。
     Primary,
@@ -54,8 +82,10 @@ pub struct ButtonLike {
     content: Div,
     /// 按钮变体，决定按钮的视觉风格和交互行为，例如主按钮、次按钮等。
     variant: ButtonVariant,
+    /// 按钮尺寸，决定文字大小和内边距。
+    size: ButtonSize,
     /// 用户自定义样式，优先级高于主题默认值。通过 [`Styled`] trait 访问，无需直接操作此字段。
-    user_style: StyleRefinement,
+    style: StyleRefinement,
     /// 可选的点击事件处理器，当按钮被点击时触发。
     on_click: Option<BoxedClickHandler>,
     /// 按钮的子元素列表，可以包含文本、图标或其他 UI 组件。
@@ -70,7 +100,8 @@ impl ButtonLike {
             id: id.into(),
             content: div(),
             variant: ButtonVariant::Primary,
-            user_style: StyleRefinement::default(),
+            size: ButtonSize::default(),
+            style: StyleRefinement::default(),
             on_click: None,
             children: SmallVec::new(),
             disabled: false,
@@ -82,12 +113,19 @@ impl ButtonLike {
         self.variant = variant;
         self
     }
+
+    /// 设置按钮尺寸（Xs / Sm / Md / Lg）。
+    pub fn size(mut self, size: ButtonSize) -> Self {
+        self.size = size;
+        self
+    }
 }
 
 impl RenderOnce for ButtonLike {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let theme = GlobalTheme::theme(cx);
         let variant_styles = self.variant.styles(cx);
+        let (text_px, pad_y, pad_x) = self.size.sizing(&theme);
 
         // 先建立主题默认样式的基础 div，最后用 refine_style 合并用户样式（用户优先）
         self.content
@@ -97,11 +135,11 @@ impl RenderOnce for ButtonLike {
             .justify_center()
             .bg(variant_styles.background)
             .text_color(variant_styles.foreground)
-            .text_size(px(theme.styles.typography.md))
-            .pl(px(theme.styles.spacing.md))
-            .pr(px(theme.styles.spacing.md))
-            .pt(px(theme.styles.spacing.xs))
-            .pb(px(theme.styles.spacing.xs))
+            .text_size(px(text_px))
+            .pl(px(pad_x))
+            .pr(px(pad_x))
+            .pt(px(pad_y))
+            .pb(px(pad_y))
             .rounded(px(theme.styles.radius.md))
             .border_1()
             .border_color(variant_styles.border_color)
@@ -124,7 +162,7 @@ impl RenderOnce for ButtonLike {
                             .border_color(variant_styles.active_border)
                     })
             })
-            .refine_style(&self.user_style)
+            .refine_style(&self.style)
             .when_some(
                 self.on_click.filter(|_| !self.disabled),
                 |this, on_click| {
@@ -156,7 +194,7 @@ impl ParentElement for ButtonLike {
 
 impl Styled for ButtonLike {
     fn style(&mut self) -> &mut StyleRefinement {
-        &mut self.user_style
+        &mut self.style
     }
 }
 

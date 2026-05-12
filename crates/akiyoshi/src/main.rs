@@ -1,8 +1,9 @@
 mod states;
 mod views;
 
-use gpui::{App, AppContext, Bounds, WindowBounds, WindowOptions, px, size, TitlebarOptions};
+use gpui::{App, AppContext, Bounds, WindowBounds, WindowOptions, px, size};
 use gpui_platform::application;
+use ui::Titlebar;
 
 use crate::views::Akiyoshi;
 use states::AppState;
@@ -34,10 +35,7 @@ fn main() {
             WindowOptions {
                 display_id: primary_display.map(|d| d.id()),
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
-                titlebar: Some(TitlebarOptions {
-                    title: Some("秋吉".into()),
-                   ..Default::default() 
-                }),
+                titlebar: Some(Titlebar::new().into()),
                 ..Default::default()
             },
             // 传入 cx，以便 Akiyoshi::new 可以注册 observe_global

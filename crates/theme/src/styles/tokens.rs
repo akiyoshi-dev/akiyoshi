@@ -1,9 +1,9 @@
 mod color;
-mod spacing;
 mod radius;
+mod spacing;
 mod typography;
 
 pub use color::*;
-pub use spacing::*;
 pub use radius::*;
+pub use spacing::*;
 pub use typography::*;

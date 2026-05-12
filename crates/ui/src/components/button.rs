@@ -3,4 +3,4 @@ mod button_like;
 
 pub use button::*;
 
-pub use button_like::ButtonVariant;
+pub use button_like::{ButtonSize, ButtonVariant};

@@ -1,4 +1,4 @@
-use crate::{clickable::Clickable, components::button::button_like::{ButtonLike, ButtonVariant}, disableable::Disableable};
+use crate::{clickable::Clickable, components::button::button_like::{ButtonLike, ButtonSize, ButtonVariant}, disableable::Disableable};
 use gpui::{
     App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, StyleRefinement, Styled,
     Window, prelude::FluentBuilder,
@@ -28,6 +28,12 @@ impl Button {
     /// 设置按钮变体（Primary / Secondary / Outline / Ghost / Destructive / Link）。
     pub fn variant(mut self, variant: ButtonVariant) -> Self {
         self.content = self.content.variant(variant);
+        self
+    }
+
+    /// 设置按钮尺寸（Xs / Sm / Md / Lg）。
+    pub fn size(mut self, size: ButtonSize) -> Self {
+        self.content = self.content.size(size);
         self
     }
 

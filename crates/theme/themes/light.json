@@ -17,7 +17,7 @@
         "default": "#ffffff",
         "hover": "#f4f4f5",
         "active": "#e4e4e7",
-        "elevated": "#ffffff"
+        "elevated": "#fafafa"
       },
       "card": {
         "background": "#ffffff",
