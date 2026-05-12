@@ -30,6 +30,12 @@ impl Button {
         self.content = self.content.variant(variant);
         self
     }
+
+    /// 让按钮宽度撑满父容器。
+    /// 等价于 `.w_full()`，只是语义更明确。
+    pub fn full_width(self) -> Self {
+        self.w_full()
+    }
 }
 
 impl RenderOnce for Button {

@@ -1,9 +1,13 @@
 use crate::states::AppState;
 use gpui::{div, px, Context, Entity, IntoElement, ParentElement, Render, Styled, Window};
 use theme::{ActiveTheme, GlobalTheme};
-use ui::clickable::Clickable;
-use ui::disableable::Disableable;
-use ui::{Button, ButtonVariant};
+use ui::{
+    clickable::Clickable,
+    disableable::Disableable,
+    Button,
+    ButtonVariant,
+    styled_ext::StyledExt
+};
 
 pub struct Akiyoshi {
     state: Entity<AppState>,
@@ -57,9 +61,7 @@ impl Render for Akiyoshi {
             .child(
                 // ── 所有变体一行展示 ──
                 div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
+                    .h_flex()
                     .gap(px(12.))
                     .child(
                         Button::new("btn-primary")
@@ -100,9 +102,7 @@ impl Render for Akiyoshi {
             .child(
                 // ── 禁用态展示 ──
                 div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
+                    .h_flex()
                     .gap(px(12.))
                     .child(
                         Button::new("btn-primary-disabled")
@@ -120,6 +120,20 @@ impl Render for Akiyoshi {
                             .label("Destructive (禁用)")
                             .variant(ButtonVariant::Destructive)
                             .disabled(true),
+                    ),
+            )
+            .child(
+                // ── 全宽按钮演示（给一个固定宽父容器）──
+                div()
+                    .w(px(400.))
+                    .v_flex()
+                    .gap(px(8.))
+                    .child(Button::new("btn-full-primary").label("全宽 Primary").full_width())
+                    .child(
+                        Button::new("btn-full-outline")
+                            .label("全宽 Outline")
+                            .variant(ButtonVariant::Outline)
+                            .full_width(),
                     ),
             )
     }

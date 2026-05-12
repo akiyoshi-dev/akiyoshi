@@ -5,7 +5,7 @@ use crate::{
 };
 use gpui::{
     AnyElement, App, Div, ElementId, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Refineable, RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
+    RenderOnce, StatefulInteractiveElement, StyleRefinement, Styled, Window, div,
     prelude::FluentBuilder, px,
 };
 use smallvec::SmallVec;
@@ -54,8 +54,8 @@ pub struct ButtonLike {
     content: Div,
     /// 按钮变体，决定按钮的视觉风格和交互行为，例如主按钮、次按钮等。
     variant: ButtonVariant,
-    /// 用户自定义样式，优先级高于主题默认值。
-    pub(super) user_style: StyleRefinement,
+    /// 用户自定义样式，优先级高于主题默认值。通过 [`Styled`] trait 访问，无需直接操作此字段。
+    user_style: StyleRefinement,
     /// 可选的点击事件处理器，当按钮被点击时触发。
     on_click: Option<BoxedClickHandler>,
     /// 按钮的子元素列表，可以包含文本、图标或其他 UI 组件。
@@ -89,9 +89,8 @@ impl RenderOnce for ButtonLike {
         let theme = GlobalTheme::theme(cx);
         let variant_styles = self.variant.styles(cx);
 
-        // 先建立主题默认样式的基础 div
-        let mut base = self
-            .content
+        // 先建立主题默认样式的基础 div，最后用 refine_style 合并用户样式（用户优先）
+        self.content
             .h_flex()
             .id(self.id)
             .items_center()
@@ -101,6 +100,8 @@ impl RenderOnce for ButtonLike {
             .text_size(px(theme.styles.typography.md))
             .pl(px(theme.styles.spacing.md))
             .pr(px(theme.styles.spacing.md))
+            .pt(px(theme.styles.spacing.xs))
+            .pb(px(theme.styles.spacing.xs))
             .rounded(px(theme.styles.radius.md))
             .border_1()
             .border_color(variant_styles.border_color)
@@ -122,22 +123,18 @@ impl RenderOnce for ButtonLike {
                             .bg(variant_styles.active_background)
                             .border_color(variant_styles.active_border)
                     })
-            });
-
-        // 将用户自定义样式覆盖到主题默认值之上
-        base.style().refine(&self.user_style);
-
-        // 绑定点击事件
-        base.when_some(
-            self.on_click.filter(|_| !self.disabled),
-            |this, on_click| {
-                this.on_click(move |event, window, cx| {
-                    cx.stop_propagation();
-                    on_click(event, window, cx);
-                })
-            },
-        )
-        .children(self.children)
+            })
+            .refine_style(&self.user_style)
+            .when_some(
+                self.on_click.filter(|_| !self.disabled),
+                |this, on_click| {
+                    this.on_click(move |event, window, cx| {
+                        cx.stop_propagation();
+                        on_click(event, window, cx);
+                    })
+                },
+            )
+            .children(self.children)
     }
 }
 
