@@ -1,9 +1,9 @@
 use crate::ThemeError;
-use gpui::{Hsla, hsla, Rgba, rgba, rgb};
+use gpui::{Hsla, Rgba, rgb, rgba};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{Display, Formatter},
-    str::FromStr
+    str::FromStr,
 };
 
 /// 颜色标记定义主题中使用的颜色值，通常以十六进制格式表示，例如 `#RRGGBB` 或 `#AARRGGBB`。
@@ -125,6 +125,7 @@ pub struct InputTokens {
     pub placeholder: HexColor,
 }
 
+
 impl FromStr for HexColor {
     type Err = ThemeError;
 
@@ -174,14 +175,28 @@ impl HexColor {
         }
     }
 
-    /// 将十六进制颜色转换为 RGB 颜色对象。
+    /// 将十六进制颜色转换为 RGB 颜色对象（alpha 强制为 1.0）。
+    ///
+    /// 使用 GPUI 的 `rgb(0x00RRGGBB)` 格式，高字节会被忽略，alpha 自动为 1.0。
     pub fn rgb(self) -> Rgba {
-        rgb(self.into())
+        rgb(self.0 & 0x00ff_ffff)
     }
 
-    /// 将十六进制颜色转换为 RGBA 颜色对象，如果十六进制颜色包含 alpha 通道则使用它，否则默认 alpha 为 255。
+    /// 将十六进制颜色转换为 RGBA 颜色对象。
+    ///
+    /// GPUI 的 `rgba(u32)` 期望格式为 `0xRRGGBBAA`，而 `HexColor` 内部格式是：
+    /// - 6 位色：`0x00RRGGBB` → 转换为 `0xRRGGBBFF`（alpha=1.0）
+    /// - 8 位色：`0xAARRGGBB` → 转换为 `0xRRGGBBAA`
     pub fn rgba(self) -> Rgba {
-        rgba(self.into())
+        if self.0 <= 0x00ff_ffff {
+            // 6 位：0x00RRGGBB → 左移 8 位得 0xRRGGBB00，OR 0xFF 得 0xRRGGBBFF
+            rgba((self.0 << 8) | 0xff)
+        } else {
+            // 8 位：0xAARRGGBB → 提取并重排为 0xRRGGBBAA
+            let a = (self.0 >> 24) & 0xff;
+            let rgb = self.0 & 0x00ff_ffff;
+            rgba((rgb << 8) | a)
+        }
     }
 
     /// 将颜色压暗一定比例，返回新的颜色值（保留原 alpha）。
@@ -236,39 +251,24 @@ impl<'de> Deserialize<'de> for HexColor {
 
 impl From<HexColor> for Hsla {
     fn from(value: HexColor) -> Self {
-        let r = value.r() as f32 / 255.0;
-        let g = value.g() as f32 / 255.0;
-        let b = value.b() as f32 / 255.0;
-        let a = value.a() as f32 / 255.0;
+        Hsla::from(value.rgba())
+    }
+}
 
-        // Convert RGB to HSL
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
-        let mut h = 0.0;
-        let s;
-        let l = (max + min) / 2.0;
+impl From<Rgba> for HexColor  {
+    fn from(value: Rgba) -> Self {
+        let r = value.r as u32;
+        let g = value.g as u32;
+        let b = value.b as u32;
+        let a = value.a as u32;
 
-        if max == min {
-            s = 0.0; // achromatic
+        if a == 255 {
+            // 不包含 alpha 通道
+            HexColor((r << 16) | (g << 8) | b)
         } else {
-            s = if l > 0.5 {
-                (max - min) / (2.0 - max - min)
-            } else {
-                (max - min) / (max + min)
-            };
-
-            h = if max == r {
-                (g - b) / (max - min) + if g < b { 6.0 } else { 0.0 }
-            } else if max == g {
-                (b - r) / (max - min) + 2.0
-            } else {
-                (r - g) / (max - min) + 4.0
-            };
-
-            h /= 6.0;
+            // 包含 alpha 通道
+            HexColor((a << 24) | (r << 16) | (g << 8) | b)
         }
-
-        hsla(h * 360.0, s, l, a)
     }
 }
 
@@ -280,6 +280,12 @@ impl Into<u32> for HexColor {
 
 impl From<HexColor> for Rgba {
     fn from(value: HexColor) -> Self {
-        rgba(value.into())
+        value.rgba()
+    }
+}
+
+impl From<Hsla> for HexColor {
+    fn from(value: Hsla) -> Self {
+        HexColor::from(value.to_rgb())
     }
 }

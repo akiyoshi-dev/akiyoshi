@@ -3,7 +3,7 @@
   "id": "akiyoshi_light",
   "name": "Akiyoshi Light",
   "appearance": "light",
-  "describe": "基于 shadcn/ui 语义令牌的浅色主题，适合白天与高亮环境。",
+  "describe": "基于 shadcn/ui Zinc 配色的浅色主题，黑白简约风格。",
   "author": {
     "name": "Akiyoshi Team",
     "contact": "theme@akiyoshi.local"
@@ -12,51 +12,51 @@
   "styles": {
     "colors": {
       "background": "#ffffff",
-      "foreground": "#020817",
+      "foreground": "#09090b",
       "surface": {
         "default": "#ffffff",
-        "hover": "#f8fafc",
-        "active": "#f1f5f9",
+        "hover": "#f4f4f5",
+        "active": "#e4e4e7",
         "elevated": "#ffffff"
       },
       "card": {
         "background": "#ffffff",
-        "foreground": "#020817",
-        "border": "#e2e8f0"
+        "foreground": "#09090b",
+        "border": "#e4e4e7"
       },
       "popover": {
         "background": "#ffffff",
-        "foreground": "#020817",
-        "border": "#e2e8f0"
+        "foreground": "#09090b",
+        "border": "#e4e4e7"
       },
-      "primary": "#0f172a",
-      "secondary": "#f1f5f9",
-      "accent": "#f1f5f9",
-      "muted": "#f1f5f9",
+      "primary": "#18181b",
+      "secondary": "#f4f4f5",
+      "accent": "#f4f4f5",
+      "muted": "#f4f4f5",
       "danger": "#ef4444",
       "success": "#22c55e",
       "warning": "#f59e0b",
       "info": "#3b82f6",
       "text": {
-        "primary": "#020817",
-        "secondary": "#475569",
-        "muted": "#64748b",
-        "disabled": "#94a3b8",
-        "inverted": "#f8fafc"
+        "primary": "#09090b",
+        "secondary": "#71717a",
+        "muted": "#a1a1aa",
+        "disabled": "#d4d4d8",
+        "inverted": "#fafafa"
       },
       "border": {
-        "default": "#e2e8f0",
-        "muted": "#f1f5f9",
-        "strong": "#cbd5e1"
+        "default": "#e4e4e7",
+        "muted": "#f4f4f5",
+        "strong": "#d4d4d8"
       },
       "input": {
         "background": "#ffffff",
-        "foreground": "#020817",
-        "border": "#e2e8f0",
-        "placeholder": "#94a3b8"
+        "foreground": "#09090b",
+        "border": "#e4e4e7",
+        "placeholder": "#a1a1aa"
       },
-      "ring": "#94a3b8",
-      "overlay": "#0f172a"
+      "ring": "#18181b",
+      "overlay": "#09090b"
     },
     "spacing": {
       "xs": 4.0,
@@ -67,12 +67,12 @@
     },
     "radius": {
       "sm": 4.0,
-      "md": 8.0,
-      "lg": 12.0
+      "md": 6.0,
+      "lg": 10.0
     },
     "typography": {
       "sm": 14.0,
-      "md": 16.0,
+      "md": 15.0,
       "lg": 18.0
     }
   }

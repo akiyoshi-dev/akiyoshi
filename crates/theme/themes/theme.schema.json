@@ -280,7 +280,8 @@
         "foreground",
         "surface",
         "primary",
-        "border"
+        "border",
+        "input"
       ],
       "additionalProperties": false,
       "properties": {

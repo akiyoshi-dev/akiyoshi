@@ -1,4 +1,4 @@
-use crate::{clickable::Clickable, components::button::button_like::ButtonLike};
+use crate::{clickable::Clickable, components::button::button_like::{ButtonLike, ButtonVariant}, disableable::Disableable};
 use gpui::{
     App, ElementId, IntoElement, ParentElement, RenderOnce, SharedString, StyleRefinement, Styled,
     Window, prelude::FluentBuilder,
@@ -24,6 +24,12 @@ impl Button {
         self.label = Some(label.into());
         self
     }
+
+    /// 设置按钮变体（Primary / Secondary / Outline / Ghost / Destructive / Link）。
+    pub fn variant(mut self, variant: ButtonVariant) -> Self {
+        self.content = self.content.variant(variant);
+        self
+    }
 }
 
 impl RenderOnce for Button {
@@ -45,6 +51,13 @@ impl Clickable for Button {
         H: crate::clickable::ClickHandlerFn,
     {
         self.content = self.content.on_click(handler);
+        self
+    }
+}
+
+impl Disableable for Button {
+    fn disabled(mut self, disabled: bool) -> Self {
+        self.content = self.content.disabled(disabled);
         self
     }
 }

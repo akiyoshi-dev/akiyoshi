@@ -11,7 +11,7 @@ use std::{
 
 pub use crate::{
     registry::ThemeRegistry,
-    styles::{ColorTokens, RadiusTokens, SpacingTokens, TypographyTokens},
+    styles::*,
 };
 pub use appearance::*;
 use dark_light::Mode;

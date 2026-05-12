@@ -3,7 +3,7 @@
   "id": "akiyoshi_dark",
   "name": "Akiyoshi Dark",
   "appearance": "dark",
-  "describe": "基于 shadcn/ui 语义令牌的深色主题，适合夜间与低亮环境。",
+  "describe": "基于 shadcn/ui Zinc 配色的深色主题，黑白简约风格。",
   "author": {
     "name": "Akiyoshi Team",
     "contact": "theme@akiyoshi.local"
@@ -11,51 +11,51 @@
   "version": "1.0.0",
   "styles": {
     "colors": {
-      "background": "#020817",
-      "foreground": "#f8fafc",
+      "background": "#09090b",
+      "foreground": "#fafafa",
       "surface": {
-        "default": "#020817",
-        "hover": "#111827",
-        "active": "#1f2937",
-        "elevated": "#020817"
+        "default": "#09090b",
+        "hover": "#18181b",
+        "active": "#27272a",
+        "elevated": "#18181b"
       },
       "card": {
-        "background": "#020817",
-        "foreground": "#f8fafc",
-        "border": "#1e293b"
+        "background": "#09090b",
+        "foreground": "#fafafa",
+        "border": "#27272a"
       },
       "popover": {
-        "background": "#020817",
-        "foreground": "#f8fafc",
-        "border": "#1e293b"
+        "background": "#09090b",
+        "foreground": "#fafafa",
+        "border": "#27272a"
       },
-      "primary": "#f8fafc",
-      "secondary": "#1e293b",
-      "accent": "#1e293b",
-      "muted": "#1e293b",
-      "danger": "#7f1d1d",
-      "success": "#22c55e",
-      "warning": "#f59e0b",
-      "info": "#3b82f6",
+      "primary": "#fafafa",
+      "secondary": "#27272a",
+      "accent": "#27272a",
+      "muted": "#27272a",
+      "danger": "#dc2626",
+      "success": "#16a34a",
+      "warning": "#d97706",
+      "info": "#2563eb",
       "text": {
-        "primary": "#f8fafc",
-        "secondary": "#94a3b8",
-        "muted": "#64748b",
-        "disabled": "#64748b",
-        "inverted": "#0f172a"
+        "primary": "#fafafa",
+        "secondary": "#a1a1aa",
+        "muted": "#71717a",
+        "disabled": "#52525b",
+        "inverted": "#18181b"
       },
       "border": {
-        "default": "#1e293b",
-        "muted": "#1f2937",
-        "strong": "#334155"
+        "default": "#27272a",
+        "muted": "#18181b",
+        "strong": "#3f3f46"
       },
       "input": {
-        "background": "#020817",
-        "foreground": "#f8fafc",
-        "border": "#1e293b",
-        "placeholder": "#64748b"
+        "background": "#09090b",
+        "foreground": "#fafafa",
+        "border": "#27272a",
+        "placeholder": "#71717a"
       },
-      "ring": "#334155",
+      "ring": "#d4d4d8",
       "overlay": "#000000"
     },
     "spacing": {
@@ -67,12 +67,12 @@
     },
     "radius": {
       "sm": 4.0,
-      "md": 8.0,
-      "lg": 12.0
+      "md": 6.0,
+      "lg": 10.0
     },
     "typography": {
       "sm": 14.0,
-      "md": 16.0,
+      "md": 15.0,
       "lg": 18.0
     }
   }
