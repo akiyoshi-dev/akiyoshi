@@ -1,9 +1,10 @@
 use crate::states::AppState;
-use gpui::prelude::FluentBuilder;
-use gpui::{Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px};
+use gpui::{
+    Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div,
+    prelude::FluentBuilder, px,
+};
 use theme::{ActiveTheme, ActiveThemeMut, ThemeId};
-use ui::clickable::Clickable;
-use ui::{Button, ButtonSize, ButtonVariant, Titlebar};
+use ui::{Button, ButtonSize, ButtonVariant, Titlebar, clickable::Clickable};
 
 pub struct Akiyoshi {
     state: Entity<AppState>,
@@ -79,7 +80,8 @@ impl Render for Akiyoshi {
                                 cx.notify();
                             })),
                     )
-                    .when(window.is_fullscreen(), |e| e.pl(px(spacing.lg))),
+                    .when(window.is_fullscreen(), |e| e.pl(px(spacing.lg)))
+                    .pr(px(spacing.lg)),
             )
             // ── 主内容区 ──────────────────────────────────────────────
             .child(

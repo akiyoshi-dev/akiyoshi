@@ -68,7 +68,6 @@ impl RenderOnce for Titlebar {
             .w_full()
             .h(TITLEBAR_HEIGHT)
             .flex_shrink_0()
-            .items_center()
             // macOS 非全屏：左侧为红绿灯留空；全屏：红绿灯不显示，正常缩进
             .when(!fullscreen, |this| this.pl(TITLEBAR_LEFT_PADDING))
             .when(fullscreen, |this| this.pl(px(spacing.md)))
