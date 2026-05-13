@@ -1,5 +1,6 @@
 mod appearance;
 mod registry;
+mod scale;
 mod styles;
 mod utils;
 
@@ -9,13 +10,11 @@ use std::{
     sync::Arc,
 };
 
-pub use crate::{
-    registry::ThemeRegistry,
-    styles::*,
-};
+pub use crate::{registry::ThemeRegistry, styles::*};
 pub use appearance::*;
 use dark_light::Mode;
 use gpui::{App, BorrowAppContext, Global, SharedString};
+pub use scale::*;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
 
@@ -91,44 +90,122 @@ pub struct Theme {
     pub styles: ThemeStyles,
 }
 
-/// 全局主题。这是一个全局可访问的结构，包含当前活动的主题实例。
+/// 全局主题。这是一个全局可访问的结构，包含当前活动的主题实例以及全局排版档位。
 pub struct GlobalTheme {
     theme: Arc<Theme>,
+    /// 全局字体大小档位，所有组件通过 [`GlobalTheme::font_size`] 读取
+    font_size_scale: FontSizeScale,
+    /// 全局行间距档位，所有组件通过 [`GlobalTheme::line_height`] 读取
+    line_height_scale: LineHeightScale,
 }
 
 impl GlobalTheme {
-    /// 返回当前激活主题。
-    pub fn theme(cx: &App) -> &Arc<Theme> {
-        &cx.global::<Self>().theme
-    }
+    // ── 静态辅助（供 trait 实现调用）────────────────────────────────
 
-    /// 更新当前激活主题。
-    pub fn set_theme(cx: &mut App, theme: Arc<Theme>) {
-        cx.update_global::<Self, _>(|global, _| {
-            global.theme = theme;
-        });
-    }
-
-    /// 通过 ThemeId 切换主题。
-    /// 从全局注册表中查找主题，更新 GlobalTheme，触发所有订阅者刷新。
-    pub fn switch_theme(theme_id: impl Into<ThemeId>, cx: &mut App) -> Result<ThemeId, ThemeError> {
-        let theme_id: ThemeId = theme_id.into();
+    /// 切换到指定 [`ThemeId`] 的主题，保留当前排版档位。
+    ///
+    /// 通常不直接调用此方法，而是通过 [`ActiveThemeMut::switch_theme`]。
+    pub(crate) fn do_switch_theme(theme_id: ThemeId, cx: &mut App) -> Result<ThemeId, ThemeError> {
         let registry = ThemeRegistry::default_global(cx);
         let theme = registry.get(theme_id.clone())?;
-        cx.update_global::<Self, _>(|global, _| {
-            global.theme = theme;
-        });
+        cx.update_global::<Self, _>(|g, _| g.theme = theme);
         Ok(theme_id)
+    }
+
+    // ── 只读实例方法（借 &self 即可使用）────────────────────────────
+
+    /// 当前激活的主题 Arc。
+    pub fn theme(&self) -> &Arc<Theme> {
+        &self.theme
+    }
+
+    /// 当前字号档位。
+    pub fn font_size_scale(&self) -> FontSizeScale {
+        self.font_size_scale
+    }
+
+    /// 当前行距档位。
+    pub fn line_height_scale(&self) -> LineHeightScale {
+        self.line_height_scale
+    }
+
+    /// 当前全局字号（px）。
+    pub fn font_size(&self) -> f32 {
+        self.font_size_scale.font_size(&self.theme)
+    }
+
+    /// 当前全局行高（px）。
+    pub fn line_height(&self) -> f32 {
+        self.line_height_scale
+            .line_height(&self.theme, &self.font_size_scale)
     }
 }
 
+/// 主题只读访问。
+///
+/// 为 [`gpui::App`]（以及通过 `Deref` 的 [`gpui::Context<T>`]）提供
+/// 当前主题 token 与全局排版设置的只读访问接口。
+/// 在任何持有 `&App` 或 `&Context<T>` 的地方均可直接调用。
 pub trait ActiveTheme {
+    /// 当前激活的 [`Theme`]（颜色、间距、圆角、排版 token）。
     fn theme(&self) -> &Arc<Theme>;
+    /// 当前全局字号（px），由 [`FontSizeScale`] 和主题 token 共同决定。
+    fn font_size(&self) -> f32;
+    /// 当前全局行高（px），由 [`LineHeightScale`] 和字号共同决定。
+    fn line_height(&self) -> f32;
+    /// 当前字号档位。
+    fn font_size_scale(&self) -> FontSizeScale;
+    /// 当前行距档位。
+    fn line_height_scale(&self) -> LineHeightScale;
 }
 
 impl ActiveTheme for App {
     fn theme(&self) -> &Arc<Theme> {
-        GlobalTheme::theme(self)
+        &self.global::<GlobalTheme>().theme
+    }
+    fn font_size(&self) -> f32 {
+        self.global::<GlobalTheme>().font_size()
+    }
+    fn line_height(&self) -> f32 {
+        self.global::<GlobalTheme>().line_height()
+    }
+    fn font_size_scale(&self) -> FontSizeScale {
+        self.global::<GlobalTheme>().font_size_scale
+    }
+    fn line_height_scale(&self) -> LineHeightScale {
+        self.global::<GlobalTheme>().line_height_scale
+    }
+}
+
+/// 主题可变访问。
+///
+/// 为 [`gpui::App`]（以及通过 `DerefMut` 的 [`gpui::Context<T>`]）提供
+/// 切换主题、更新排版档位的写入接口，避免了手动借用 `GlobalTheme` 的复杂性。
+///
+/// 典型用法（在 `cx.listener` 闭包中）：
+/// ```ignore
+/// let next = cx.font_size_scale().next();
+/// cx.set_font_size_scale(next);
+/// cx.notify();
+/// ```
+pub trait ActiveThemeMut: ActiveTheme {
+    /// 切换到指定 [`ThemeId`] 的主题，**保留**当前排版档位。
+    fn switch_theme(&mut self, id: ThemeId) -> Result<ThemeId, ThemeError>;
+    /// 更新全局字号档位。
+    fn set_font_size_scale(&mut self, scale: FontSizeScale);
+    /// 更新全局行距档位。
+    fn set_line_height_scale(&mut self, scale: LineHeightScale);
+}
+
+impl ActiveThemeMut for App {
+    fn switch_theme(&mut self, id: ThemeId) -> Result<ThemeId, ThemeError> {
+        GlobalTheme::do_switch_theme(id, self)
+    }
+    fn set_font_size_scale(&mut self, scale: FontSizeScale) {
+        self.update_global::<GlobalTheme, _>(|g, _| g.font_size_scale = scale);
+    }
+    fn set_line_height_scale(&mut self, scale: LineHeightScale) {
+        self.update_global::<GlobalTheme, _>(|g, _| g.line_height_scale = scale);
     }
 }
 
@@ -238,11 +315,17 @@ pub fn init(theme_id: Option<ThemeId>, cx: &mut App) -> Result<ThemeId, ThemeErr
 
     // 首次：直接 set_global；后续切换通过 switch_theme，这里统一处理
     if cx.try_global::<GlobalTheme>().is_some() {
+        // 只更新主题，保留用户已设置的排版档位
         cx.update_global::<GlobalTheme, _>(|global, _| {
             global.theme = theme;
         });
     } else {
-        cx.set_global(GlobalTheme { theme });
+        // 首次初始化，使用默认排版档位
+        cx.set_global(GlobalTheme {
+            theme,
+            font_size_scale: FontSizeScale::default(),
+            line_height_scale: LineHeightScale::default(),
+        });
     }
 
     Ok(theme_id)

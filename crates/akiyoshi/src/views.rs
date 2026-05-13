@@ -1,186 +1,135 @@
 use crate::states::AppState;
+use gpui::prelude::FluentBuilder;
 use gpui::{Context, Entity, IntoElement, ParentElement, Render, Styled, Window, div, px};
-use theme::{ActiveTheme, GlobalTheme};
-use ui::{
-    Button, ButtonSize, ButtonVariant, Titlebar, clickable::Clickable, disableable::Disableable,
-    styled_ext::StyledExt,
-};
+use theme::{ActiveTheme, ActiveThemeMut, ThemeId};
+use ui::clickable::Clickable;
+use ui::{Button, ButtonSize, ButtonVariant, Titlebar};
 
 pub struct Akiyoshi {
     state: Entity<AppState>,
 }
 
 impl Akiyoshi {
-    pub fn new(state: Entity<AppState>, cx: &mut Context<Self>) -> Self {
-        cx.observe_global::<GlobalTheme>(|_, cx| {
-            cx.notify();
-        })
-        .detach();
+    pub fn new(state: Entity<AppState>) -> Self {
         Self { state }
     }
 }
 
 impl Render for Akiyoshi {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.theme();
-        let bg = theme.styles.colors.background.rgb();
-        let text = theme.styles.colors.text.primary.rgb();
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // ── 读取所有需要的数据（短暂借用，立即 Copy/Clone，后续不再持有 cx 的引用）──
+        let theme_id = cx.theme().id.clone();
+        let font_scale = cx.font_size_scale();
+        let lh_scale = cx.line_height_scale();
+        let font_size = cx.font_size();
+        let line_height = cx.line_height();
 
-        // 切换主题的 on_click 闭包
-        let toggle = {
-            let state = self.state.clone();
-            move |_event: &_, _window: &mut _, cx: &mut _| {
-                state.update(cx, |s, cx| s.toggle_theme(cx));
-            }
-        };
+        let colors = cx.theme().styles.colors;
+        let spacing = cx.theme().styles.spacing;
+        let radius = cx.theme().styles.radius;
+        let typo = cx.theme().styles.typography;
 
         div()
+            .flex()
+            .flex_col()
             .w_full()
             .h_full()
+            .bg(colors.background.rgb())
+            // ── 工具栏 ────────────────────────────────────────────────
             .child(
                 Titlebar::new()
-                    .gap(px(theme.styles.spacing.lg))
-                    .child("Title Button🍂")
+                    // 主题切换
                     .child(
-                        Button::new("create-item")
-                            .label("Title Button")
+                        Button::new("btn_theme")
                             .size(ButtonSize::Sm)
-                            .variant(ButtonVariant::Link),
-                    ),
+                            .variant(ButtonVariant::Primary)
+                            .label(theme_id.as_str())
+                            .on_click(cx.listener(|this, _ev, _, cx| {
+                                let next: ThemeId = match cx.theme().id.as_ref() {
+                                    "akiyoshi_light" => "akiyoshi_dark".into(),
+                                    _ => "akiyoshi_light".into(),
+                                };
+                                if let Ok(id) = cx.switch_theme(next) {
+                                    this.state.update(cx, |s, _| s.theme_id = Some(id));
+                                }
+                                cx.notify();
+                            })),
+                    )
+                    // 字号切换
+                    .child(
+                        Button::new("btn_font_size")
+                            .size(ButtonSize::Sm)
+                            .variant(ButtonVariant::Ghost)
+                            .label(font_scale.label())
+                            .on_click(cx.listener(|_, _ev, _, cx| {
+                                let next = cx.font_size_scale().next();
+                                cx.set_font_size_scale(next);
+                                cx.notify();
+                            })),
+                    )
+                    // 行距切换
+                    .child(
+                        Button::new("btn_line_height")
+                            .size(ButtonSize::Sm)
+                            .variant(ButtonVariant::Ghost)
+                            .label(lh_scale.label())
+                            .on_click(cx.listener(|_, _ev, _, cx| {
+                                let next = cx.line_height_scale().next();
+                                cx.set_line_height_scale(next);
+                                cx.notify();
+                            })),
+                    )
+                    .when(window.is_fullscreen(), |e| e.pl(px(spacing.lg))),
             )
+            // ── 主内容区 ──────────────────────────────────────────────
             .child(
                 div()
-                    .size_full()
-                    .bg(bg)
                     .flex()
                     .flex_col()
-                    .items_center()
-                    .justify_center()
-                    .gap(px(32.))
+                    .flex_1()
+                    .gap(px(spacing.md))
+                    .p(px(spacing.lg))
+                    // 排版预览卡片
                     .child(
-                        // ── 标题 ──
                         div()
-                            .text_color(text)
-                            .text_size(px(theme.styles.typography.lg))
-                            .child("Button Showcase"),
-                    )
-                    .child(
-                        // ── 切换主题 ──
-                        Button::new("toggle-theme")
-                            .label("切换主题")
-                            .on_click(toggle.clone()),
-                    )
-                    .child(
-                        // ── 所有变体一行展示 ──
-                        div()
-                            .h_flex()
-                            .gap(px(12.))
+                            .flex()
+                            .flex_col()
+                            .gap(px(spacing.sm))
+                            .p(px(spacing.md))
+                            .rounded(px(radius.md))
+                            .bg(colors.surface.default.rgb())
+                            .border_1()
+                            .border_color(colors.border.default.rgb())
+                            // 卡片标题（始终使用 lg 字号，不受全局档位影响）
                             .child(
-                                Button::new("btn-primary")
-                                    .label("Primary")
-                                    .on_click(toggle.clone()),
+                                div()
+                                    .text_size(px(typo.lg))
+                                    .line_height(px(typo.line_height.lg))
+                                    .text_color(colors.text.primary.rgb())
+                                    .child("排版预览"),
                             )
+                            // 示例正文（跟随全局字号和行距档位）
                             .child(
-                                Button::new("btn-secondary")
-                                    .label("Secondary")
-                                    .variant(ButtonVariant::Secondary)
-                                    .on_click(toggle.clone()),
+                                div()
+                                    .text_size(px(font_size))
+                                    .line_height(px(line_height))
+                                    .text_color(colors.text.primary.rgb())
+                                    .child(
+                                        "这是一段用于展示排版效果的示例文本。\
+                                        点击工具栏按钮可切换主题、字号与行距，\
+                                        所有 UI 组件均实时响应全局排版设置。",
+                                    ),
                             )
+                            // 当前参数（次要色，始终用 sm 字号）
                             .child(
-                                Button::new("btn-outline")
-                                    .label("Outline")
-                                    .variant(ButtonVariant::Outline)
-                                    .on_click(toggle.clone()),
-                            )
-                            .child(
-                                Button::new("btn-ghost")
-                                    .label("Ghost")
-                                    .variant(ButtonVariant::Ghost)
-                                    .on_click(toggle.clone()),
-                            )
-                            .child(
-                                Button::new("btn-destructive")
-                                    .label("Destructive")
-                                    .variant(ButtonVariant::Destructive)
-                                    .on_click(toggle.clone()),
-                            )
-                            .child(
-                                Button::new("btn-link")
-                                    .label("Link")
-                                    .variant(ButtonVariant::Link)
-                                    .on_click(toggle.clone()),
-                            ),
-                    )
-                    .child(
-                        // ── 禁用态展示 ──
-                        div()
-                            .h_flex()
-                            .gap(px(12.))
-                            .child(
-                                Button::new("btn-primary-disabled")
-                                    .label("Primary (禁用)")
-                                    .disabled(true),
-                            )
-                            .child(
-                                Button::new("btn-outline-disabled")
-                                    .label("Outline (禁用)")
-                                    .variant(ButtonVariant::Outline)
-                                    .disabled(true),
-                            )
-                            .child(
-                                Button::new("btn-destructive-disabled")
-                                    .label("Destructive (禁用)")
-                                    .variant(ButtonVariant::Destructive)
-                                    .disabled(true),
-                            ),
-                    )
-                    .child(
-                        // ── 尺寸对比展示 ──
-                        div()
-                            .h_flex()
-                            .items_center()
-                            .gap(px(12.))
-                            .child(
-                                Button::new("btn-xs")
-                                    .label("Xs")
-                                    .size(ButtonSize::Xs)
-                                    .variant(ButtonVariant::Outline),
-                            )
-                            .child(
-                                Button::new("btn-sm")
-                                    .label("Sm")
-                                    .size(ButtonSize::Sm)
-                                    .variant(ButtonVariant::Outline),
-                            )
-                            .child(
-                                Button::new("btn-md")
-                                    .label("Md (默认)")
-                                    .size(ButtonSize::Md)
-                                    .variant(ButtonVariant::Outline),
-                            )
-                            .child(
-                                Button::new("btn-lg")
-                                    .label("Lg")
-                                    .size(ButtonSize::Lg)
-                                    .variant(ButtonVariant::Outline),
-                            ),
-                    )
-                    .child(
-                        // ── 全宽按钮演示（给一个固定宽父容器）──
-                        div()
-                            .w(px(400.))
-                            .v_flex()
-                            .gap(px(8.))
-                            .child(
-                                Button::new("btn-full-primary")
-                                    .label("全宽 Primary")
-                                    .full_width(),
-                            )
-                            .child(
-                                Button::new("btn-full-outline")
-                                    .label("全宽 Outline")
-                                    .variant(ButtonVariant::Outline)
-                                    .full_width(),
+                                div()
+                                    .text_size(px(typo.sm))
+                                    .line_height(px(typo.line_height.sm))
+                                    .text_color(colors.text.muted.rgb())
+                                    .child(format!(
+                                        "字号：{:.0}px  ·  行高：{:.1}px",
+                                        font_size, line_height
+                                    )),
                             ),
                     ),
             )

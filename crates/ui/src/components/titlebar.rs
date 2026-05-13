@@ -1,37 +1,50 @@
 use gpui::{
     AnyElement, InteractiveElement, IntoElement, ParentElement, Pixels, RenderOnce,
-    StyleRefinement, Styled, TitlebarOptions, div, point, prelude::FluentBuilder, px,
+    StyleRefinement, Styled, Window, div, prelude::FluentBuilder, px,
 };
 use smallvec::SmallVec;
 use theme::ActiveTheme;
 
 use crate::styled_ext::StyledExt;
 
-/// 标题栏组件 ID
+/// 标题栏高度（px）
+const TITLEBAR_HEIGHT: Pixels = px(40.);
+
+/// 标题栏 ID
 const TITLEBAR_ID: &str = "titlebar";
-/// 标题栏高度
-const TITLEBAR_HEIGHT: Pixels = px(34.);
 
-/// 标题栏内文字大小（比正文 md/15px 略小，营造层级感）
-const TITLEBAR_TEXT_SIZE: Pixels = px(13.);
-
-/// 在 macOS 上，标题栏左侧的内边距
+/// macOS 非全屏时，左侧为红绿灯按钮预留的内边距。
+///
+/// 数值 80px = 9px 左边距 + 3 个 12px 按钮 + 两个 8px 间距 + 若干余量。
 #[cfg(target_os = "macos")]
-const TITLEBAR_PADDING_LEFT: Pixels = px(80.);
+const TITLEBAR_LEFT_PADDING: Pixels = px(80.);
 
-/// 在 Windows 上，标题栏左侧的内边距
+/// 非 macOS 或全屏时的左侧内边距，与主题 `spacing.md` 对齐。
 #[cfg(not(target_os = "macos"))]
-const TITLEBAR_PADDING_LEFT: Pixels = px(12.);
+const TITLEBAR_LEFT_PADDING: Pixels = px(12.);
 
-/// 在 macOS 上，标题栏左侧的内边距
-const MACOS_TRAFFIC_LIGHT_POSITION: gpui::Point<Pixels> = point(px(9.), px(9.));
-
+/// 标题栏组件。
+///
+/// 渲染在窗口内容区顶部，作为应用的视觉顶栏，可承载主题切换、
+/// 排版调整等全局快捷操作。
+///
+/// **macOS 行为：**
+/// - 非全屏：左侧自动预留 `TITLEBAR_LEFT_PADDING`（80px）空间，避免内容与红绿灯重叠。
+/// - 全屏：左侧使用主题 `spacing.md`（红绿灯在全屏模式下不可见）。
+///
+/// # 用法
+///
+/// ```ignore
+/// Titlebar::new()
+///     .child(Button::new("btn_theme").label("暗色主题").on_click(...))
+///     .child(Button::new("btn_font").label("字号：中").on_click(...))
+/// ```
 #[derive(IntoElement)]
 pub struct Titlebar {
-    /// 自定义样式
+    /// 用户自定义样式，优先级高于主题默认值。
     style: StyleRefinement,
-    /// 子元素
-    children: SmallVec<[AnyElement; 2]>,
+    /// 子元素列表。
+    children: SmallVec<[AnyElement; 4]>,
 }
 
 impl Titlebar {
@@ -43,41 +56,29 @@ impl Titlebar {
     }
 }
 
-impl Into<TitlebarOptions> for Titlebar {
-    fn into(self) -> TitlebarOptions {
-        TitlebarOptions {
-            title: None,
-            appears_transparent: true,
-            traffic_light_position: Some(MACOS_TRAFFIC_LIGHT_POSITION),
-        }
-    }
-}
-
 impl RenderOnce for Titlebar {
-    fn render(self, window: &mut gpui::Window, cx: &mut gpui::App) -> impl IntoElement {
-        let theme = cx.theme();
-
-        // 获取窗口是否处于全屏模式
+    fn render(self, window: &mut Window, cx: &mut gpui::App) -> impl IntoElement {
+        let colors = cx.theme().styles.colors;
+        let spacing = cx.theme().styles.spacing;
         let fullscreen = window.is_fullscreen();
 
-        div().flex_shrink_0().child(
-            div()
-                .id(TITLEBAR_ID)
-                .h_flex()
-                .items_center()
-                .h(TITLEBAR_HEIGHT)
-                .when(!fullscreen, |this| this.pl(TITLEBAR_PADDING_LEFT))
-                .when(fullscreen, |this| this.pl(px(theme.styles.spacing.md)))
-                .border_b_1()
-                .border_color(theme.styles.colors.border.default)
-                .bg(theme.styles.colors.surface.elevated.rgb())
-                // 标题栏文字比内容区小一档，颜色用 text.secondary（略 muted），
-                // 让主内容区的 text.primary 在视觉层级上更突出。
-                .text_color(theme.styles.colors.text.secondary.rgb())
-                .text_size(TITLEBAR_TEXT_SIZE)
-                .refine_style(&self.style)
-                .children(self.children),
-        )
+        div()
+            .id(TITLEBAR_ID)
+            .h_flex()
+            .w_full()
+            .h(TITLEBAR_HEIGHT)
+            .flex_shrink_0()
+            .items_center()
+            // macOS 非全屏：左侧为红绿灯留空；全屏：红绿灯不显示，正常缩进
+            .when(!fullscreen, |this| this.pl(TITLEBAR_LEFT_PADDING))
+            .when(fullscreen, |this| this.pl(px(spacing.md)))
+            .pr(px(spacing.md))
+            .gap(px(spacing.xs))
+            .bg(colors.surface.elevated.rgb())
+            .border_b_1()
+            .border_color(colors.border.default.rgb())
+            .refine_style(&self.style)
+            .children(self.children)
     }
 }
 
@@ -88,7 +89,6 @@ impl ParentElement for Titlebar {
 }
 
 impl Styled for Titlebar {
-    #[doc = " Returns a reference to the style memory of this element."]
     fn style(&mut self) -> &mut StyleRefinement {
         &mut self.style
     }

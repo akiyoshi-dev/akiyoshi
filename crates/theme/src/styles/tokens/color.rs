@@ -125,7 +125,6 @@ pub struct InputTokens {
     pub placeholder: HexColor,
 }
 
-
 impl FromStr for HexColor {
     type Err = ThemeError;
 
@@ -251,11 +250,21 @@ impl<'de> Deserialize<'de> for HexColor {
 
 impl From<HexColor> for Hsla {
     fn from(value: HexColor) -> Self {
-        Hsla::from(value.rgba())
+        let r = value.r() as f32 / 255.0;
+        let g = value.g() as f32 / 255.0;
+        let b = value.b() as f32 / 255.0;
+        // 6 位十六进制颜色（#RRGGBB）没有 alpha 通道，高位字节为 0，
+        // 应视为完全不透明（alpha = 1.0）而非完全透明。
+        let a = if value.0 <= 0x00ff_ffff {
+            1.0_f32
+        } else {
+            value.a() as f32 / 255.0
+        };
+        Hsla::from(gpui::Rgba { r, g, b, a })
     }
 }
 
-impl From<Rgba> for HexColor  {
+impl From<Rgba> for HexColor {
     fn from(value: Rgba) -> Self {
         let r = value.r as u32;
         let g = value.g as u32;

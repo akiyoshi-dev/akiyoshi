@@ -9,17 +9,10 @@
     "^\\$schema$": {
       "type": "string",
       "description": "Optional self-reference to this schema file.",
-      "examples": [
-        "./theme.schema.json"
-      ]
+      "examples": ["./theme.schema.json"]
     }
   },
-  "required": [
-    "id",
-    "name",
-    "appearance",
-    "styles"
-  ],
+  "required": ["id", "name", "appearance", "styles"],
   "properties": {
     "id": {
       "type": "string",
@@ -33,10 +26,7 @@
     },
     "appearance": {
       "type": "string",
-      "enum": [
-        "light",
-        "dark"
-      ],
+      "enum": ["light", "dark"],
       "description": "主题外观模式"
     },
     "describe": {
@@ -60,10 +50,7 @@
     "author": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "contact"
-      ],
+      "required": ["name", "contact"],
       "description": "作者对象，包含主题作者的基本信息",
       "properties": {
         "name": {
@@ -83,12 +70,7 @@
     "styles": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "colors",
-        "spacing",
-        "radius",
-        "typography"
-      ],
+      "required": ["colors", "spacing", "radius", "typography"],
       "properties": {
         "colors": {
           "$ref": "#/$defs/colorTokens",
@@ -111,12 +93,7 @@
     "surfaceTokens": {
       "type": "object",
       "description": "表面层颜色，用于卡片、容器、浮层等。",
-      "required": [
-        "default",
-        "hover",
-        "active",
-        "elevated"
-      ],
+      "required": ["default", "hover", "active", "elevated"],
       "additionalProperties": false,
       "properties": {
         "default": {
@@ -141,11 +118,7 @@
       "type": "object",
       "description": "卡片组件颜色。",
       "additionalProperties": false,
-      "required": [
-        "background",
-        "foreground",
-        "border"
-      ],
+      "required": ["background", "foreground", "border"],
       "properties": {
         "background": {
           "$ref": "#/$defs/hexColor",
@@ -165,11 +138,7 @@
       "type": "object",
       "description": "弹出层颜色。",
       "additionalProperties": false,
-      "required": [
-        "background",
-        "foreground",
-        "border"
-      ],
+      "required": ["background", "foreground", "border"],
       "properties": {
         "background": {
           "$ref": "#/$defs/hexColor",
@@ -189,13 +158,7 @@
       "type": "object",
       "additionalProperties": false,
       "description": "文本颜色配置。",
-      "required": [
-        "primary",
-        "secondary",
-        "muted",
-        "disabled",
-        "inverted"
-      ],
+      "required": ["primary", "secondary", "muted", "disabled", "inverted"],
       "properties": {
         "primary": {
           "$ref": "#/$defs/hexColor",
@@ -223,11 +186,7 @@
       "type": "object",
       "description": "边框颜色配置。",
       "additionalProperties": false,
-      "required": [
-        "default",
-        "muted",
-        "strong"
-      ],
+      "required": ["default", "muted", "strong"],
       "properties": {
         "default": {
           "$ref": "#/$defs/hexColor",
@@ -247,12 +206,7 @@
       "type": "object",
       "description": "输入组件颜色配置。",
       "additionalProperties": false,
-      "required": [
-        "background",
-        "foreground",
-        "border",
-        "placeholder"
-      ],
+      "required": ["background", "foreground", "border", "placeholder"],
       "properties": {
         "background": {
           "$ref": "#/$defs/hexColor",
@@ -363,13 +317,7 @@
       "type": "object",
       "additionalProperties": false,
       "description": "间距相关的设计令牌配置，单位为像素。",
-      "required": [
-        "xs",
-        "sm",
-        "md",
-        "lg",
-        "xl"
-      ],
+      "required": ["xs", "sm", "md", "lg", "xl"],
       "properties": {
         "xs": {
           "type": "number",
@@ -397,11 +345,7 @@
       "type": "object",
       "additionalProperties": false,
       "description": "边框圆角相关的设计令牌配置，单位为像素。",
-      "required": [
-        "sm",
-        "md",
-        "lg"
-      ],
+      "required": ["sm", "md", "lg"],
       "properties": {
         "sm": {
           "type": "number",
@@ -421,11 +365,31 @@
       "type": "object",
       "additionalProperties": false,
       "description": "排版相关的设计令牌配置，单位为像素。",
-      "required": [
-        "sm",
-        "md",
-        "lg"
-      ],
+      "required": ["sm", "md", "lg", "line_height"],
+      "properties": {
+        "sm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "md": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "lg": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "line_height": {
+          "$ref": "#/$defs/lineHeightTokens",
+          "description": "各字号对应的默认行高配置。"
+        }
+      }
+    },
+    "lineHeightTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "行高相关的设计令牌配置，单位为像素。",
+      "required": ["sm", "md", "lg"],
       "properties": {
         "sm": {
           "type": "number",

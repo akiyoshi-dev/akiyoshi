@@ -1,9 +1,10 @@
 mod states;
 mod views;
 
-use gpui::{App, AppContext, Bounds, WindowBounds, WindowOptions, px, size};
+use gpui::{
+    App, AppContext, Bounds, TitlebarOptions, WindowBounds, WindowOptions, point, px, size,
+};
 use gpui_platform::application;
-use ui::Titlebar;
 
 use crate::views::Akiyoshi;
 use states::AppState;
@@ -35,11 +36,16 @@ fn main() {
             WindowOptions {
                 display_id: primary_display.map(|d| d.id()),
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
-                titlebar: Some(Titlebar::new().into()),
+                // 透明原生标题栏 + 红绿灯居中于 40px 内容标题栏（y = (40 - 12) / 2 = 14）
+                titlebar: Some(TitlebarOptions {
+                    title: None,
+                    appears_transparent: true,
+                    traffic_light_position: Some(point(px(9.), px(14.))),
+                }),
+                window_min_size: Some(window_size),
                 ..Default::default()
             },
-            // 传入 cx，以便 Akiyoshi::new 可以注册 observe_global
-            |_, cx| cx.new(|cx| Akiyoshi::new(state, cx)),
+            |_, cx| cx.new(|_cx| Akiyoshi::new(state)),
         )
         .unwrap();
     });

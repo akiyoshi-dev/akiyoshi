@@ -9,7 +9,7 @@ use gpui::{
     prelude::FluentBuilder, px,
 };
 use smallvec::SmallVec;
-use theme::{ActiveTheme, GlobalTheme};
+use theme::ActiveTheme;
 
 /// 按钮尺寸，控制文字大小与内边距，适配不同场景（标题栏、工具栏、正文、突出操作）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -26,15 +26,14 @@ pub enum ButtonSize {
 }
 
 impl ButtonSize {
-    /// 返回 (text_px, pad_y_px, pad_x_px)
-    fn sizing(self, theme: &theme::Theme) -> (f32, f32, f32) {
+    /// 返回 `(pad_y_px, pad_x_px)`，字号由 [`GlobalTheme::font_size`] 统一提供。
+    fn padding(self, theme: &theme::Theme) -> (f32, f32) {
         let s = &theme.styles.spacing;
-        let t = &theme.styles.typography;
         match self {
-            ButtonSize::Xs => (11.0, 1.0, 6.0),
-            ButtonSize::Sm => (13.0, 3.0, s.sm + 2.0),  // 13px text, 3px py, 10px px
-            ButtonSize::Md => (t.md, s.xs, s.md),
-            ButtonSize::Lg => (t.lg, s.sm, s.lg),
+            ButtonSize::Xs => (1.0, s.xs + 2.0),
+            ButtonSize::Sm => (3.0, s.sm + 2.0),
+            ButtonSize::Md => (s.xs, s.md),
+            ButtonSize::Lg => (s.sm, s.lg),
         }
     }
 }
@@ -123,9 +122,11 @@ impl ButtonLike {
 
 impl RenderOnce for ButtonLike {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let theme = GlobalTheme::theme(cx);
+        let theme = cx.theme();
         let variant_styles = self.variant.styles(cx);
-        let (text_px, pad_y, pad_x) = self.size.sizing(&theme);
+        let (pad_y, pad_x) = self.size.padding(theme);
+        let text_size = cx.font_size();
+        let line_height = cx.line_height();
 
         // 先建立主题默认样式的基础 div，最后用 refine_style 合并用户样式（用户优先）
         self.content
@@ -135,7 +136,8 @@ impl RenderOnce for ButtonLike {
             .justify_center()
             .bg(variant_styles.background)
             .text_color(variant_styles.foreground)
-            .text_size(px(text_px))
+            .text_size(px(text_size))
+            .line_height(px(line_height))
             .pl(px(pad_x))
             .pr(px(pad_x))
             .pt(px(pad_y))
