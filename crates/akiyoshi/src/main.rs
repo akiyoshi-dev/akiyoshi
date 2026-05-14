@@ -45,7 +45,7 @@ fn main() {
                 window_min_size: Some(window_size),
                 ..Default::default()
             },
-            |_, cx| cx.new(|_cx| Akiyoshi::new(state)),
+            |_, cx| cx.new(|cx| Akiyoshi::new(state, cx)),
         )
         .unwrap();
     });

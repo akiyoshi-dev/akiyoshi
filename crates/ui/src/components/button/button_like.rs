@@ -232,8 +232,8 @@ impl ButtonVariant {
                 transparent,
                 transparent,
                 c.text.primary.into(),
-                c.surface.hover.into(),
-                c.surface.active.into(),
+                c.surface.hover.into(),  // hover：轻度场景反馈
+                c.surface.active.into(), // active：按下更明显的环境色
             ),
             ButtonVariant::Link => ButtonVariantStyles {
                 background: transparent,
@@ -248,23 +248,36 @@ impl ButtonVariant {
         }
     }
 
-    /// 实色背景变体（Primary / Secondary / Destructive）：
-    /// hover/active 通过降低 alpha 制造蒙层压暗效果。
+    /// 实色背景变体（Primary / Secondary / Destructive）的 hover/active 样式计算。
+    ///
+    /// 采用色相亮度直接调整而非 alpha 透明度：
+    /// - 浅色（L ≥ 0.5）→ 减小 L（向暗压缩）
+    /// - 深色（L < 0.5）→ 增大 L（向亮提升）
+    ///
+    /// 相比 alpha 方案，此方式不受父元素背景影响，视觉效果更可预测。
     fn solid(bg: Hsla, fg: Hsla) -> ButtonVariantStyles {
-        let with_alpha = |mut c: Hsla, a: f32| -> Hsla {
-            c.a = a;
-            c
-        };
+        let hover_bg = Self::dim(bg, 0.08);
+        let active_bg = Self::dim(bg, 0.16);
         ButtonVariantStyles {
             background: bg,
             border_color: bg,
             foreground: fg,
-            hover_background: with_alpha(bg, 0.90),
-            active_background: with_alpha(bg, 0.80),
-            hover_border: with_alpha(bg, 0.90),
-            active_border: with_alpha(bg, 0.80),
+            hover_background: hover_bg,
+            active_background: active_bg,
+            hover_border: hover_bg,
+            active_border: active_bg,
             hover_underline: false,
         }
+    }
+
+    /// 浅色向暗压缩，深色向亮提升，制造视觉上一致的蒙层感。
+    fn dim(mut c: Hsla, amount: f32) -> Hsla {
+        if c.l >= 0.5 {
+            c.l = (c.l - amount).max(0.0);
+        } else {
+            c.l = (c.l + amount).min(1.0);
+        }
+        c
     }
 
     /// 透明/描边变体（Outline / Ghost）：
